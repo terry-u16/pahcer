@@ -83,10 +83,15 @@ impl SingleCaseRunner {
             Ok(outputs) => {
                 let score = self.extract_score(&outputs);
 
-                // 0点の場合はWrong Answerとして扱う
+                // 0点以下の場合はWrong Answerとして扱う
                 let score = match score {
-                    Some(0.0) => Err("Wrong Answer".to_string()),
-                    Some(score) => Ok(score),
+                    Some(score) => {
+                        if score >= 0.0 {
+                            Ok(score)
+                        } else {
+                            Err("Wrong Answer".to_string())
+                        }
+                    }
                     None => Err("Score not found".to_string()),
                 };
                 TestResult::new(seed, score, duration)
@@ -192,7 +197,7 @@ mod test {
         let runner = SingleCaseRunner::new(steps, REGEX.clone());
         let result = runner.run(42);
 
-        // 0点はWrong Answerとして扱う
+        // 0点以下はWrong Answerとして扱う
         assert!(result.score.is_err());
     }
 
