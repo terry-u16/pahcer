@@ -1,6 +1,9 @@
 use anyhow::Result;
 use regex::Regex;
-use std::time::{Duration, Instant};
+use std::{
+    num::NonZeroU64,
+    time::{Duration, Instant},
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct TestStep {
@@ -32,18 +35,69 @@ impl TestStep {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct TestCase {
+    seed: u64,
+    reference_score: Option<NonZeroU64>,
+    direction: Direction,
+}
+
+impl TestCase {
+    pub(crate) const fn new(
+        seed: u64,
+        reference_score: Option<NonZeroU64>,
+        direction: Direction,
+    ) -> Self {
+        Self {
+            seed,
+            reference_score,
+            direction,
+        }
+    }
+
+    pub(crate) fn calc_relative_score(&self, new_score: NonZeroU64) -> f64 {
+        let Some(old_score) = self.reference_score else {
+            return 100.0;
+        };
+
+        match self.direction {
+            Direction::Maximize => new_score.get() as f64 / old_score.get() as f64 * 100.0,
+            Direction::Minimize => old_score.get() as f64 / new_score.get() as f64 * 100.0,
+        }
+    }
+
+    pub(crate) fn is_best(&self, new_score: NonZeroU64) -> bool {
+        let Some(old_score) = self.reference_score.map(|s| s.get()) else {
+            return true;
+        };
+
+        match self.direction {
+            Direction::Maximize => new_score.get() >= old_score,
+            Direction::Minimize => new_score.get() <= old_score,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct TestResult {
     seed: u64,
-    score: Result<f64, String>,
+    score: Result<NonZeroU64, String>,
+    relative_score: Result<f64, String>,
     duration: Duration,
 }
 
 impl TestResult {
-    pub(crate) const fn new(seed: u64, score: Result<f64, String>, duration: Duration) -> Self {
+    pub(crate) fn new(
+        test_case: &TestCase,
+        score: Result<NonZeroU64, String>,
+        duration: Duration,
+    ) -> Self {
+        let relative_score = score.clone().map(|s| test_case.calc_relative_score(s));
+
         Self {
-            seed,
+            seed: test_case.seed,
             score,
+            relative_score,
             duration,
         }
     }
@@ -52,12 +106,33 @@ impl TestResult {
         self.seed
     }
 
-    pub(crate) const fn score(&self) -> &Result<f64, String> {
+    pub(crate) fn score(&self) -> &Result<NonZeroU64, String> {
         &self.score
+    }
+
+    /// Returns the score in log10 scale.
+    pub(crate) fn score_log10(&self) -> Result<f64, &String> {
+        self.score.as_ref().map(|s| (s.get() as f64).log10())
     }
 
     pub(crate) const fn duration(&self) -> Duration {
         self.duration
+    }
+}
+
+/// The direction to optimize the score.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum Direction {
+    Maximize,
+    Minimize,
+}
+
+impl Direction {
+    fn is_best(&self, old_score: u64, new_score: u64) -> bool {
+        match self {
+            Self::Maximize => new_score >= old_score,
+            Self::Minimize => new_score <= old_score,
+        }
     }
 }
 
@@ -74,9 +149,9 @@ impl SingleCaseRunner {
         }
     }
 
-    pub(crate) fn run(&self, seed: u64) -> TestResult {
+    pub(crate) fn run(&self, test_case: &TestCase) -> TestResult {
         let since = Instant::now();
-        let result = self.run_steps(seed);
+        let result = self.run_steps(test_case.seed);
         let duration = since.elapsed();
 
         match result {
@@ -85,18 +160,15 @@ impl SingleCaseRunner {
 
                 // 0点以下の場合はWrong Answerとして扱う
                 let score = match score {
-                    Some(score) => {
-                        if score >= 0.0 {
-                            Ok(score)
-                        } else {
-                            Err("Wrong Answer".to_string())
-                        }
-                    }
+                    Some(score) => match NonZeroU64::new(score as u64) {
+                        Some(score) => Ok(score),
+                        None => Err("Wrong Answer".to_string()),
+                    },
                     None => Err("Score not found".to_string()),
                 };
-                TestResult::new(seed, score, duration)
+                TestResult::new(&test_case, score, duration)
             }
-            Err(e) => TestResult::new(seed, Err(e.to_string()), duration),
+            Err(e) => TestResult::new(&test_case, Err(e.to_string()), duration),
         }
     }
 
@@ -166,12 +238,43 @@ impl SingleCaseRunner {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use std::cell::LazyCell;
 
-    use super::*;
-
+    const TEST_CASE: TestCase = TestCase::new(42, None, Direction::Maximize);
     const REGEX: LazyCell<Regex> =
         LazyCell::new(|| Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
+
+    #[test]
+    fn test_calc_relative_score() {
+        let non_zero_100 = NonZeroU64::new(100).unwrap();
+        let non_zero_200 = NonZeroU64::new(200).unwrap();
+
+        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Direction::Maximize);
+        assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
+        assert_eq!(test_case.calc_relative_score(non_zero_200), 200.0);
+
+        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Direction::Minimize);
+        assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
+        assert_eq!(test_case.calc_relative_score(non_zero_200), 50.0);
+    }
+
+    #[test]
+    fn test_is_best() {
+        let non_zero_50 = NonZeroU64::new(50).unwrap();
+        let non_zero_100 = NonZeroU64::new(100).unwrap();
+        let non_zero_200 = NonZeroU64::new(200).unwrap();
+
+        let test_case = TestCase::new(0, Some(non_zero_100), Direction::Maximize);
+        assert!(!test_case.is_best(non_zero_50));
+        assert!(test_case.is_best(non_zero_100));
+        assert!(test_case.is_best(non_zero_200));
+
+        let test_case = TestCase::new(0, Some(non_zero_100), Direction::Minimize);
+        assert!(test_case.is_best(non_zero_50));
+        assert!(test_case.is_best(non_zero_100));
+        assert!(!test_case.is_best(non_zero_200));
+    }
 
     #[test]
     fn test_replace_placeholder() {
@@ -187,15 +290,15 @@ mod test {
     fn run_test_ok() {
         let steps = vec![gen_teststep("echo", Some("Score = 1234"))];
         let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(42);
-        assert_eq!(result.score, Ok(1234.0));
+        let result = runner.run(&TEST_CASE);
+        assert_eq!(result.score(), &Ok(NonZeroU64::new(1234).unwrap()));
     }
 
     #[test]
     fn run_test_score_zero() {
         let steps = vec![gen_teststep("echo", Some("Score = 0"))];
         let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(42);
+        let result = runner.run(&TEST_CASE);
 
         // 0点以下はWrong Answerとして扱う
         assert!(result.score.is_err());
@@ -205,7 +308,7 @@ mod test {
     fn run_test_fail() {
         let steps = vec![gen_teststep("false", None)];
         let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(42);
+        let result = runner.run(&TEST_CASE);
         assert!(result.score.is_err());
     }
 
@@ -213,7 +316,7 @@ mod test {
     fn run_test_invalid_output() {
         let steps = vec![gen_teststep("echo", Some("invalid_output"))];
         let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(42);
+        let result = runner.run(&TEST_CASE);
         assert!(result.score.is_err());
     }
 
