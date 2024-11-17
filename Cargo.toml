@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.93"
 rayon = "1.10.0"
+regex = "1.11.1"
