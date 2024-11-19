@@ -90,24 +90,24 @@ impl ResultPrinter {
             .score_width
             .max(self.score_sum.to_formatted_string(&Locale::en).len() + 3);
 
-        let test_width = self.testcase_count.to_string().len() * 2 + 6;
+        let test_width = self.testcase_count.to_string().len() * 2 + 8;
         let score_width1 = self.score_width + 11;
         let score_width2 = self.score_width;
         let mut rows = vec![];
 
         rows.push(format!(
-            "| {:^test_width$} | {:^8} | {:^score_width1$} | {:^score_width1$} | {:^8} |",
-            "Progress", "Seed", "Case Score", "Average Score", "Exec"
+            "| {:^test_width$} | {:^4} | {:^score_width1$} | {:^score_width1$} | {:^9} |",
+            "Progress", "Seed", "Case Score", "Average Score", "Exec."
         ));
         rows.push(format!(
-            "| {:^test_width$} | {:^8} | {:^score_width2$} | {:^8} | {:^score_width2$} | {:^8} | {:^8} |",
+            "| {:^test_width$} | {:^4} | {:^score_width2$} | {:^8} | {:^score_width2$} | {:^8} | {:^9} |",
             "", "", "Score", "Relative", "Score", "Relative", "Time"
         ));
 
         let test_width = test_width + 2;
         let score_width2 = score_width2 + 2;
         rows.push(format!(
-            "|{:-^test_width$}|{:-^10}|{:-^score_width2$}|{:-^10}|{:-^score_width2$}|{:-^10}|{:-^10}|",
+            "|{:-^test_width$}|{:-^6}|{:-^score_width2$}|{:-^10}|{:-^score_width2$}|{:-^10}|{:-^11}|",
             "", "", "", "", "", "", ""
         ));
 
@@ -143,7 +143,7 @@ impl ResultPrinter {
         let score_width = self.score_width;
 
         let row = format!(
-            "| case {:digit$}/{:digit$} | seed{:04} | {:>score_width$} | {:8.3} | {:>score_width$} | {:8.3} | {:>6}ms |",
+            "| case {:digit$} / {:digit$} | {:04} | {:>score_width$} | {:8.3} | {:>score_width$} | {:8.3} | {:>6} ms |",
             self.completed_count,
             self.testcase_count,
             result.test_case().seed(),
@@ -257,12 +257,12 @@ mod test {
         rows.extend(printer.gen_record(&result3));
 
         let expected = vec![
-            "| Progress |   Seed   |     Case Score      |    Average Score    |   Exec   |",
-            "|          |          |  Score   | Relative |  Score   | Relative |   Time   |",
-            "|----------|----------|----------|----------|----------|----------|----------|",
-            "| case 1/3 | seed0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234ms |",
-            "| case 2/3 | seed0001 |      500 |  500.000 |      750 |  750.000 | 12,345ms |",
-            "| case 3/3 | seed0002 |        0 |    0.000 |      500 |  500.000 |      1ms |",
+            "|  Progress  | Seed |     Case Score      |    Average Score    |   Exec.   |",
+            "|            |      |  Score   | Relative |  Score   | Relative |   Time    |",
+            "|------------|------|----------|----------|----------|----------|-----------|",
+            "| case 1 / 3 | 0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234 ms |",
+            "| case 2 / 3 | 0001 |      500 |  500.000 |      750 |  750.000 | 12,345 ms |",
+            "| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms |",
         ];
 
         println!("[EXPECTED]");
