@@ -54,7 +54,13 @@ impl MultiCaseRunner {
 
         results.sort_unstable_by_key(|r| r.test_case().seed());
 
-        TestStats::new(results)
+        let stats = TestStats::new(results);
+
+        for row in printer.gen_stats_footer(&stats) {
+            println!("{}", row);
+        }
+
+        stats
     }
 }
 
@@ -68,6 +74,8 @@ struct ResultPrinter {
 
 impl ResultPrinter {
     fn new(testcase_count: usize) -> Self {
+        assert!(testcase_count > 0);
+
         Self {
             testcase_count,
             completed_count: 0,
@@ -154,6 +162,34 @@ impl ResultPrinter {
             duration,
         );
         rows.push(row);
+
+        rows
+    }
+
+    fn gen_stats_footer(&self, stats: &TestStats) -> Vec<String> {
+        let mut rows = vec![];
+
+        let average_score = ((stats.score_sum as f64 / stats.results.len() as f64).round() as u64)
+            .to_formatted_string(&Locale::en);
+        let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
+        let average_relative_score = stats.relative_score_sum / stats.results.len() as f64;
+        let ac_count =
+            stats.results.len() - stats.results.iter().filter(|r| r.score().is_err()).count();
+
+        rows.push(format!("Average Score          : {}", average_score));
+        rows.push(format!(
+            "Average Score (log10)  : {:.3}",
+            average_score_log10
+        ));
+        rows.push(format!(
+            "Average Relative Score : {:.3}",
+            average_relative_score
+        ));
+        rows.push(format!(
+            "Accepted               : {} / {}",
+            ac_count,
+            stats.results.len()
+        ));
 
         rows
     }
@@ -255,6 +291,7 @@ mod test {
         rows.extend(printer.gen_record(&result1));
         rows.extend(printer.gen_record(&result2));
         rows.extend(printer.gen_record(&result3));
+        rows.extend(printer.gen_stats_footer(&TestStats::new(vec![result1, result2, result3])));
 
         let expected = vec![
             "|  Progress  | Seed |     Case Score      |    Average Score    |   Exec.   |",
@@ -263,6 +300,10 @@ mod test {
             "| case 1 / 3 | 0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234 ms |",
             "| case 2 / 3 | 0001 |      500 |  500.000 |      750 |  750.000 | 12,345 ms |",
             "| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms |",
+            "Average Score          : 500",
+            "Average Score (log10)  : 1.900",
+            "Average Relative Score : 500.000",
+            "Accepted               : 2 / 3",
         ];
 
         println!("[EXPECTED]");
