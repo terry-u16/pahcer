@@ -76,11 +76,15 @@ impl TestCase {
             Direction::Minimize => new_score.get() <= old_score,
         }
     }
+
+    pub(crate) const fn seed(&self) -> u64 {
+        self.seed
+    }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct TestResult {
-    seed: u64,
+    test_case: TestCase,
     score: Result<NonZeroU64, String>,
     relative_score: Result<f64, String>,
     duration: Duration,
@@ -88,22 +92,22 @@ pub(crate) struct TestResult {
 
 impl TestResult {
     pub(crate) fn new(
-        test_case: &TestCase,
+        test_case: TestCase,
         score: Result<NonZeroU64, String>,
         duration: Duration,
     ) -> Self {
         let relative_score = score.clone().map(|s| test_case.calc_relative_score(s));
 
         Self {
-            seed: test_case.seed,
+            test_case,
             score,
             relative_score,
             duration,
         }
     }
 
-    pub(crate) const fn seed(&self) -> u64 {
-        self.seed
+    pub(crate) const fn test_case(&self) -> &TestCase {
+        &self.test_case
     }
 
     pub(crate) fn score(&self) -> &Result<NonZeroU64, String> {
@@ -113,6 +117,10 @@ impl TestResult {
     /// Returns the score in log10 scale.
     pub(crate) fn score_log10(&self) -> Result<f64, &String> {
         self.score.as_ref().map(|s| (s.get() as f64).log10())
+    }
+
+    pub(crate) fn relative_score(&self) -> &Result<f64, String> {
+        &self.relative_score
     }
 
     pub(crate) const fn duration(&self) -> Duration {
@@ -136,6 +144,7 @@ impl Direction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(crate) struct SingleCaseRunner {
     steps: Vec<TestStep>,
     score_pattern: Regex,
@@ -149,7 +158,7 @@ impl SingleCaseRunner {
         }
     }
 
-    pub(crate) fn run(&self, test_case: &TestCase) -> TestResult {
+    pub(crate) fn run(&self, test_case: TestCase) -> TestResult {
         let since = Instant::now();
         let result = self.run_steps(test_case.seed);
         let duration = since.elapsed();
@@ -166,9 +175,9 @@ impl SingleCaseRunner {
                     },
                     None => Err("Score not found".to_string()),
                 };
-                TestResult::new(&test_case, score, duration)
+                TestResult::new(test_case, score, duration)
             }
-            Err(e) => TestResult::new(&test_case, Err(e.to_string()), duration),
+            Err(e) => TestResult::new(test_case, Err(e.to_string()), duration),
         }
     }
 
@@ -220,7 +229,6 @@ impl SingleCaseRunner {
             .iter()
             .map(|s| {
                 let s = String::from_utf8_lossy(s);
-                eprintln!("{}", s);
                 self.score_pattern
                     .captures_iter(&s)
                     .filter_map(|m| m.name("score").map(|s| s.as_str().parse().ok()).flatten())
@@ -242,7 +250,7 @@ mod test {
     use std::cell::LazyCell;
 
     const TEST_CASE: TestCase = TestCase::new(42, None, Direction::Maximize);
-    const REGEX: LazyCell<Regex> =
+    const SCORE_REGEX: LazyCell<Regex> =
         LazyCell::new(|| Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
     #[test]
@@ -289,16 +297,16 @@ mod test {
     #[test]
     fn run_test_ok() {
         let steps = vec![gen_teststep("echo", Some("Score = 1234"))];
-        let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(&TEST_CASE);
+        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let result = runner.run(TEST_CASE);
         assert_eq!(result.score(), &Ok(NonZeroU64::new(1234).unwrap()));
     }
 
     #[test]
     fn run_test_score_zero() {
         let steps = vec![gen_teststep("echo", Some("Score = 0"))];
-        let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(&TEST_CASE);
+        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let result = runner.run(TEST_CASE);
 
         // 0点以下はWrong Answerとして扱う
         assert!(result.score.is_err());
@@ -307,16 +315,16 @@ mod test {
     #[test]
     fn run_test_fail() {
         let steps = vec![gen_teststep("false", None)];
-        let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(&TEST_CASE);
+        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
 
     #[test]
     fn run_test_invalid_output() {
         let steps = vec![gen_teststep("echo", Some("invalid_output"))];
-        let runner = SingleCaseRunner::new(steps, REGEX.clone());
-        let result = runner.run(&TEST_CASE);
+        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
 
