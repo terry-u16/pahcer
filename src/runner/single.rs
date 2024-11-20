@@ -1,11 +1,12 @@
 use anyhow::Result;
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::{
     num::NonZeroU64,
     time::{Duration, Instant},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct TestStep {
     program: String,
     args: Vec<String>,
@@ -129,7 +130,7 @@ impl TestResult {
 }
 
 /// The direction to optimize the score.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub(crate) enum Direction {
     Maximize,
     Minimize,

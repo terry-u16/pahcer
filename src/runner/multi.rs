@@ -3,6 +3,8 @@ use num_format::{Locale, ToFormattedString};
 use std::sync::{mpsc, Arc};
 use threadpool::ThreadPool;
 
+pub(crate) fn run_multi_case() {}
+
 /// The runner for multiple cases.
 #[derive(Debug, Clone)]
 pub(crate) struct MultiCaseRunner {
