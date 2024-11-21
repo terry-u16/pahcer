@@ -3,8 +3,6 @@ use num_format::{Locale, ToFormattedString};
 use std::sync::{mpsc, Arc};
 use threadpool::ThreadPool;
 
-pub(crate) fn run_multi_case() {}
-
 /// The runner for multiple cases.
 #[derive(Debug, Clone)]
 pub(crate) struct MultiCaseRunner {
@@ -14,6 +12,18 @@ pub(crate) struct MultiCaseRunner {
 }
 
 impl MultiCaseRunner {
+    pub(crate) fn new(
+        single_runner: SingleCaseRunner,
+        test_cases: Vec<TestCase>,
+        threads: usize,
+    ) -> Self {
+        Self {
+            single_runner,
+            test_cases,
+            threads,
+        }
+    }
+
     pub(crate) fn run(&mut self) -> TestStats {
         let rx = self.start_tests();
         self.collect_results(rx)

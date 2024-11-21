@@ -6,6 +6,8 @@ use anyhow::Result;
 use clap::{Args, ValueEnum};
 use serde::{Deserialize, Serialize};
 
+pub(crate) const SETTING_FILE_PATH: &str = "pahcer_config.toml";
+
 #[derive(Debug, Clone, Args)]
 pub(crate) struct InitArgs {
     /// Name of the problem
@@ -34,9 +36,9 @@ enum Lang {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Settings {
-    general: General,
-    problem: Problem,
-    test: Test,
+    pub(crate) general: General,
+    pub(crate) problem: Problem,
+    pub(crate) test: Test,
 }
 
 impl Settings {
@@ -51,7 +53,7 @@ impl Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct General {
-    version: String,
+    pub(crate) version: String,
 }
 
 impl General {
@@ -62,9 +64,9 @@ impl General {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Problem {
-    problem_name: String,
-    objective: Objective,
-    score_regex: String,
+    pub(crate) problem_name: String,
+    pub(crate) objective: Objective,
+    pub(crate) score_regex: String,
 }
 
 impl Problem {
@@ -79,11 +81,11 @@ impl Problem {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Test {
-    start_seed: u64,
-    end_seed: u64,
-    threads: usize,
-    compile_steps: Vec<CompileStep>,
-    test_steps: Vec<TestStep>,
+    pub(crate) start_seed: u64,
+    pub(crate) end_seed: u64,
+    pub(crate) threads: usize,
+    pub(crate) compile_steps: Vec<CompileStep>,
+    pub(crate) test_steps: Vec<TestStep>,
 }
 
 impl Test {
@@ -129,11 +131,11 @@ pub(crate) fn gen_setting_file(args: &InitArgs) {
     let setting = Settings::new(general, problem, test);
 
     let setting_str = toml::to_string_pretty(&setting).unwrap();
-    std::fs::write("pahcer_config.toml", setting_str).unwrap();
+    std::fs::write(SETTING_FILE_PATH, setting_str).unwrap();
 }
 
 pub(crate) fn load_setting_file() -> Result<Settings> {
-    let setting_str = std::fs::read_to_string("pahcer_config.toml")?;
+    let setting_str = std::fs::read_to_string(SETTING_FILE_PATH)?;
     let setting = toml::from_str(&setting_str)?;
     Ok(setting)
 }
@@ -209,6 +211,11 @@ impl Language for Rust {
             CompileStep::new(
                 "cargo".to_string(),
                 vec!["build".to_string(), "--release".to_string()],
+                None,
+            ),
+            CompileStep::new(
+                "rm".to_string(),
+                vec![format!("./{}", self.problem_name), "-f".to_string()],
                 None,
             ),
             CompileStep::new(

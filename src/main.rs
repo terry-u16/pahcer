@@ -3,7 +3,6 @@ pub(crate) mod settings;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use settings::gen_setting_file;
 
 #[derive(Debug, Clone, Parser)]
 #[command(version, about)]
@@ -17,7 +16,7 @@ enum Command {
     /// Initialize the project
     Init(settings::InitArgs),
     /// Run tests
-    Run,
+    Run(runner::RunArgs),
 }
 
 fn main() -> Result<()> {
@@ -26,14 +25,14 @@ fn main() -> Result<()> {
 
     match args.command {
         Command::Init(args) => {
-            gen_setting_file(&args);
+            settings::gen_setting_file(&args);
+            let settings = settings::load_setting_file()?;
+            dbg!(settings);
         }
-        Command::Run => {
-            unimplemented!();
+        Command::Run(args) => {
+            runner::run(args)?;
         }
     }
 
-    let settings = settings::load_setting_file()?;
-    dbg!(settings);
     Ok(())
 }
