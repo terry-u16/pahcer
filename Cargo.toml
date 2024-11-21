@@ -7,6 +7,7 @@ description = "A tool to run tests for competitive programming"
 [dependencies]
 anyhow = "1.0.93"
 clap = { version = "4.5.21", features = ["derive"] }
+colored = "2.1.0"
 num-format = "0.4.4"
 num_cpus = "1.16.0"
 rand = "0.8.5"

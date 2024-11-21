@@ -1,4 +1,5 @@
 use super::single::{SingleCaseRunner, TestCase, TestResult};
+use colored::Colorize;
 use num_format::{Locale, ToFormattedString};
 use std::sync::{mpsc, Arc};
 use threadpool::ThreadPool;
@@ -162,7 +163,7 @@ impl ResultPrinter {
         self.score_width = self.score_width.max(score.len());
         let score_width = self.score_width;
 
-        let row = format!(
+        let mut row = format!(
             "| case {:digit$} / {:digit$} | {:04} | {:>score_width$} | {:8.3} | {:>score_width$} | {:8.3} | {:>6} ms |",
             self.completed_count,
             self.testcase_count,
@@ -173,6 +174,12 @@ impl ResultPrinter {
             average_relative_score,
             duration,
         );
+
+        if let Err(e) = result.score() {
+            row.extend(format!(" {}", e).chars());
+            row = row.yellow().to_string();
+        }
+
         rows.push(row);
 
         rows
@@ -197,11 +204,14 @@ impl ResultPrinter {
             "Average Relative Score : {:.3}",
             average_relative_score
         ));
-        rows.push(format!(
-            "Accepted               : {} / {}",
-            ac_count,
-            stats.results.len()
-        ));
+
+        let ac = format!("{} / {}", ac_count, stats.results.len());
+        let ac = if ac_count == stats.results.len() {
+            ac.bold().green().to_string()
+        } else {
+            ac.bold().yellow().to_string()
+        };
+        rows.push(format!("Accepted               : {}", ac));
 
         rows
     }
@@ -221,11 +231,16 @@ impl TestStats {
             .iter()
             .filter_map(|r| r.score().as_ref().ok().map(|s| s.get()))
             .sum();
-        let score_sum_log10 = results.iter().filter_map(|r| r.score_log10().ok()).sum();
+        let score_sum_log10 = results
+            .iter()
+            .filter_map(|r| r.score_log10().ok())
+            .sum::<f64>()
+            .max(0.0);
         let relative_score_sum = results
             .iter()
             .filter_map(|r| r.relative_score().as_ref().ok())
-            .sum();
+            .sum::<f64>()
+            .max(0.0);
 
         Self {
             results,
@@ -311,11 +326,11 @@ mod test {
             "|------------|------|----------|----------|----------|----------|-----------|",
             "| case 1 / 3 | 0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234 ms |",
             "| case 2 / 3 | 0001 |      500 |  500.000 |      750 |  750.000 | 12,345 ms |",
-            "| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms |",
+            "\u{1b}[33m| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms | error\u{1b}[0m",
             "Average Score          : 500",
             "Average Score (log10)  : 1.900",
             "Average Relative Score : 500.000",
-            "Accepted               : 2 / 3",
+            "Accepted               : \u{1b}[1;33m2 / 3\u{1b}[0m",
         ];
 
         println!("[EXPECTED]");

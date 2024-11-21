@@ -26,7 +26,12 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     );
 
     let seed_range = settings.test.start_seed..settings.test.end_seed;
-    ensure!(!seed_range.is_empty(), "Seed range is empty");
+    ensure!(
+        !seed_range.is_empty(),
+        "Seed range [{}, {}) is empty. Ensure that start_seed < end_seed (note that end_seed is exclusive).",
+        seed_range.start,
+        seed_range.end
+    );
 
     // TODO: reference_scoreの読み込み
     let mut test_cases = seed_range
