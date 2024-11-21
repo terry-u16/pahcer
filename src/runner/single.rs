@@ -1,4 +1,5 @@
 use anyhow::Result;
+use clap::ValueEnum;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -40,19 +41,19 @@ impl TestStep {
 pub(crate) struct TestCase {
     seed: u64,
     reference_score: Option<NonZeroU64>,
-    direction: Direction,
+    objective: Objective,
 }
 
 impl TestCase {
     pub(crate) const fn new(
         seed: u64,
         reference_score: Option<NonZeroU64>,
-        direction: Direction,
+        objective: Objective,
     ) -> Self {
         Self {
             seed,
             reference_score,
-            direction,
+            objective,
         }
     }
 
@@ -61,9 +62,9 @@ impl TestCase {
             return 100.0;
         };
 
-        match self.direction {
-            Direction::Maximize => new_score.get() as f64 / old_score.get() as f64 * 100.0,
-            Direction::Minimize => old_score.get() as f64 / new_score.get() as f64 * 100.0,
+        match self.objective {
+            Objective::Max => new_score.get() as f64 / old_score.get() as f64 * 100.0,
+            Objective::Min => old_score.get() as f64 / new_score.get() as f64 * 100.0,
         }
     }
 
@@ -72,9 +73,9 @@ impl TestCase {
             return true;
         };
 
-        match self.direction {
-            Direction::Maximize => new_score.get() >= old_score,
-            Direction::Minimize => new_score.get() <= old_score,
+        match self.objective {
+            Objective::Max => new_score.get() >= old_score,
+            Objective::Min => new_score.get() <= old_score,
         }
     }
 
@@ -129,18 +130,20 @@ impl TestResult {
     }
 }
 
-/// The direction to optimize the score.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub(crate) enum Direction {
-    Maximize,
-    Minimize,
+/// The direction to optimize the score
+#[derive(Debug, Clone, Copy, ValueEnum, Serialize, Deserialize)]
+pub(crate) enum Objective {
+    /// Maximize the score
+    Max,
+    /// Minimize the score
+    Min,
 }
 
-impl Direction {
+impl Objective {
     fn is_best(&self, old_score: u64, new_score: u64) -> bool {
         match self {
-            Self::Maximize => new_score >= old_score,
-            Self::Minimize => new_score <= old_score,
+            Self::Max => new_score >= old_score,
+            Self::Min => new_score <= old_score,
         }
     }
 }
@@ -250,7 +253,7 @@ mod test {
     use super::*;
     use std::cell::LazyCell;
 
-    const TEST_CASE: TestCase = TestCase::new(42, None, Direction::Maximize);
+    const TEST_CASE: TestCase = TestCase::new(42, None, Objective::Max);
     const SCORE_REGEX: LazyCell<Regex> =
         LazyCell::new(|| Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
@@ -259,11 +262,11 @@ mod test {
         let non_zero_100 = NonZeroU64::new(100).unwrap();
         let non_zero_200 = NonZeroU64::new(200).unwrap();
 
-        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Direction::Maximize);
+        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Max);
         assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
         assert_eq!(test_case.calc_relative_score(non_zero_200), 200.0);
 
-        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Direction::Minimize);
+        let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Min);
         assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
         assert_eq!(test_case.calc_relative_score(non_zero_200), 50.0);
     }
@@ -274,12 +277,12 @@ mod test {
         let non_zero_100 = NonZeroU64::new(100).unwrap();
         let non_zero_200 = NonZeroU64::new(200).unwrap();
 
-        let test_case = TestCase::new(0, Some(non_zero_100), Direction::Maximize);
+        let test_case = TestCase::new(0, Some(non_zero_100), Objective::Max);
         assert!(!test_case.is_best(non_zero_50));
         assert!(test_case.is_best(non_zero_100));
         assert!(test_case.is_best(non_zero_200));
 
-        let test_case = TestCase::new(0, Some(non_zero_100), Direction::Minimize);
+        let test_case = TestCase::new(0, Some(non_zero_100), Objective::Min);
         assert!(test_case.is_best(non_zero_50));
         assert!(test_case.is_best(non_zero_100));
         assert!(!test_case.is_best(non_zero_200));

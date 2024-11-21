@@ -229,7 +229,7 @@ impl TestStats {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::runner::single::{Direction, TestStep};
+    use crate::runner::single::{Objective, TestStep};
     use regex::Regex;
     use std::{cell::LazyCell, num::NonZero, time::Duration};
 
@@ -248,10 +248,10 @@ mod test {
         )];
         let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
         let test_cases = vec![
-            TestCase::new(0, NonZero::new(100), Direction::Maximize),
-            TestCase::new(1, NonZero::new(200), Direction::Maximize),
-            TestCase::new(2, NonZero::new(50), Direction::Maximize),
-            TestCase::new(3, None, Direction::Maximize),
+            TestCase::new(0, NonZero::new(100), Objective::Max),
+            TestCase::new(1, NonZero::new(200), Objective::Max),
+            TestCase::new(2, NonZero::new(50), Objective::Max),
+            TestCase::new(3, None, Objective::Max),
         ];
         let mut runner = MultiCaseRunner {
             single_runner,
@@ -272,19 +272,19 @@ mod test {
         let mut printer = ResultPrinter::new(3);
 
         let result1 = TestResult::new(
-            TestCase::new(0, NonZero::new(100), Direction::Maximize),
+            TestCase::new(0, NonZero::new(100), Objective::Max),
             Ok(NonZero::new(1000).unwrap()),
             Duration::from_millis(1234),
         );
 
         let result2 = TestResult::new(
-            TestCase::new(1, NonZero::new(100), Direction::Maximize),
+            TestCase::new(1, NonZero::new(100), Objective::Max),
             Ok(NonZero::new(500).unwrap()),
             Duration::from_millis(12345),
         );
 
         let result3 = TestResult::new(
-            TestCase::new(2, NonZero::new(100), Direction::Maximize),
+            TestCase::new(2, NonZero::new(100), Objective::Max),
             Err("error".to_string()),
             Duration::from_millis(1),
         );

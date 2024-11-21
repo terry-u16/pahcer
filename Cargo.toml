@@ -2,6 +2,7 @@
 name = "pahcer"
 version = "0.1.0"
 edition = "2021"
+description = "A tool to run tests for competitive programming"
 
 [dependencies]
 anyhow = "1.0.93"
