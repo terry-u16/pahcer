@@ -1,9 +1,11 @@
-use anyhow::Result;
-use clap::ValueEnum;
+use anyhow::{Context, Result};
+use clap::{Command, ValueEnum};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
+    ffi::OsStr,
     num::NonZeroU64,
+    path::{self, Path},
     time::{Duration, Instant},
 };
 
@@ -181,7 +183,7 @@ impl SingleCaseRunner {
                 };
                 TestResult::new(test_case, score, duration)
             }
-            Err(e) => TestResult::new(test_case, Err(e.to_string()), duration),
+            Err(e) => TestResult::new(test_case, Err(format!("{:#}", e)), duration),
         }
     }
 
@@ -189,43 +191,81 @@ impl SingleCaseRunner {
         let mut outputs = vec![];
 
         for step in self.steps.iter() {
-            // Set up the command
-            let mut cmd = std::process::Command::new(&step.program);
-            cmd.args(step.args.iter().map(|s| Self::replace_placeholder(s, seed)));
-
-            if let Some(dir) = &step.current_dir {
-                let dir = Self::replace_placeholder(dir, seed);
-                cmd.current_dir(dir);
-            }
-
-            if let Some(stdin) = &step.stdin {
-                let stdin = Self::replace_placeholder(stdin, seed);
-                cmd.stdin(std::fs::File::open(stdin)?);
-            }
-
-            // Run the command
-            let output = cmd.output()?;
-
-            // Check the result
-            anyhow::ensure!(output.status.success(), "Failed to run: {}", output.status);
-
-            // Write the output
-            if let Some(stdout) = &step.stdout {
-                let stdout = Self::replace_placeholder(stdout, seed);
-                std::fs::write(stdout, &output.stdout)?;
-            }
-
-            if let Some(stderr) = &step.stderr {
-                let stderr = Self::replace_placeholder(stderr, seed);
-                std::fs::write(stderr, &output.stderr)?;
-            }
-
-            // Save the output
-            outputs.push(output.stdout);
-            outputs.push(output.stderr);
+            let cmd = Self::build_cmd(step, seed)?;
+            Self::run_cmd(cmd, step, seed, &mut outputs)?;
         }
 
         Ok(outputs)
+    }
+
+    fn build_cmd(step: &TestStep, seed: u64) -> Result<std::process::Command, anyhow::Error> {
+        let mut cmd = std::process::Command::new(&step.program);
+        cmd.args(step.args.iter().map(|s| Self::replace_placeholder(s, seed)));
+
+        if let Some(dir) = &step.current_dir {
+            let dir = Self::replace_placeholder(dir, seed);
+            cmd.current_dir(dir);
+        }
+
+        if let Some(stdin) = &step.stdin {
+            let stdin = Self::replace_placeholder(stdin, seed);
+            let file = std::fs::File::open(&stdin)
+                .with_context(|| format!("Failed to open input file ({})", &stdin))?;
+            cmd.stdin(file);
+        }
+
+        Ok(cmd)
+    }
+
+    fn run_cmd(
+        mut cmd: std::process::Command,
+        step: &TestStep,
+        seed: u64,
+        outputs: &mut Vec<Vec<u8>>,
+    ) -> Result<(), anyhow::Error> {
+        let output = cmd
+            .output()
+            .with_context(|| format!("Failed to run. command: {:?}", cmd))?;
+        anyhow::ensure!(
+            output.status.success(),
+            "Failed to run ({}). command: {:?}",
+            output.status,
+            cmd
+        );
+
+        if let Some(stdout) = &step.stdout {
+            let stdout = Self::replace_placeholder(stdout, seed);
+            Self::write_output(Path::new(&stdout), &output.stdout)
+                .with_context(|| format!("Failed to write stdout to {stdout}"))?;
+        }
+
+        if let Some(stderr) = &step.stderr {
+            let stderr = Self::replace_placeholder(stderr, seed);
+            Self::write_output(Path::new(&stderr), &output.stderr)
+                .with_context(|| format!("Failed to write stderr to {stderr}"))?;
+        }
+
+        outputs.push(output.stdout);
+        outputs.push(output.stderr);
+
+        Ok(())
+    }
+
+    fn create_parent_dir_all(path: impl AsRef<OsStr>) -> Result<()> {
+        if let Some(parent) = std::path::Path::new(&path).parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("Failed to create directory: {:?}", parent))?;
+        }
+
+        Ok(())
+    }
+
+    fn write_output(path: impl AsRef<OsStr>, contents: &[u8]) -> Result<()> {
+        let path = Path::new(&path);
+        Self::create_parent_dir_all(path)?;
+        std::fs::write(&path, contents)?;
+
+        Ok(())
     }
 
     fn extract_score(&self, outputs: &[Vec<u8>]) -> Option<f64> {

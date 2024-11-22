@@ -176,7 +176,7 @@ impl ResultPrinter {
         );
 
         if let Err(e) = result.score() {
-            row.extend(format!(" {}", e).chars());
+            row.push_str(&format!("\n{}", e));
             row = row.yellow().to_string();
         }
 
@@ -326,7 +326,7 @@ mod test {
             "|------------|------|----------|----------|----------|----------|-----------|",
             "| case 1 / 3 | 0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234 ms |",
             "| case 2 / 3 | 0001 |      500 |  500.000 |      750 |  750.000 | 12,345 ms |",
-            "\u{1b}[33m| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms | error\u{1b}[0m",
+            "\u{1b}[33m| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms |\nerror\u{1b}[0m",
             "Average Score          : 500",
             "Average Score (log10)  : 1.900",
             "Average Relative Score : 500.000",

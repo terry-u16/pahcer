@@ -3,6 +3,7 @@ pub(crate) mod settings;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 
 #[derive(Debug, Clone, Parser)]
 #[command(version, about)]
@@ -19,11 +20,18 @@ enum Command {
     Run(runner::RunArgs),
 }
 
-fn main() -> Result<()> {
+fn main() {
     let args = Cli::parse();
     dbg!(&args);
 
-    match args.command {
+    if let Err(e) = run_command(args) {
+        eprintln!("{}", format!("Error: {:?}", e).yellow().bold());
+        std::process::exit(1);
+    }
+}
+
+fn run_command(args: Cli) -> Result<(), anyhow::Error> {
+    Ok(match args.command {
         Command::Init(args) => {
             settings::gen_setting_file(&args);
             let settings = settings::load_setting_file()?;
@@ -32,7 +40,5 @@ fn main() -> Result<()> {
         Command::Run(args) => {
             runner::run(args)?;
         }
-    }
-
-    Ok(())
+    })
 }

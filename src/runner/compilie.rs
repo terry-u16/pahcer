@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,10 +31,16 @@ pub(super) fn compile(steps: &[CompileStep]) -> Result<()> {
             cmd.current_dir(dir);
         }
 
-        let status = cmd.status()?;
+        let status = cmd
+            .status()
+            .with_context(|| format!("Failed to compile. command: {:?}", cmd))?;
 
         if !status.success() {
-            return Err(anyhow::anyhow!("Failed to compile"));
+            return Err(anyhow::anyhow!(
+                "Failed to compile. command: {:?}, status: {}",
+                cmd,
+                status
+            ));
         }
     }
 
