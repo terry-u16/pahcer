@@ -1,22 +1,14 @@
 pub(crate) mod compilie;
-pub(crate) mod multi;
+mod io;
+mod multi;
 pub(crate) mod single;
 
 use crate::settings::{Settings, SETTING_FILE_PATH};
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Result};
 use clap::Args;
 use compilie::compile;
 use rand::prelude::*;
 use regex::Regex;
-use std::{
-    collections::{BTreeMap, HashMap},
-    fs::File,
-    io::{BufReader, BufWriter},
-    num::NonZeroU64,
-    path::Path,
-};
-
-const BEST_SCORE_FILE: &str = "best_scores.json";
 
 #[derive(Debug, Clone, Args)]
 pub(crate) struct RunArgs {
@@ -26,9 +18,9 @@ pub(crate) struct RunArgs {
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
-    let settings = load_setting_file()?;
-    let best_score_path = Path::new(&settings.test.out_dir).join(Path::new(BEST_SCORE_FILE));
-    let mut best_scores = load_best_scores(&best_score_path)?;
+    let settings = io::load_setting_file()?;
+    let best_score_path = io::get_best_score_path(&settings.test.out_dir);
+    let mut best_scores = io::load_best_scores(&best_score_path)?;
     compile(&settings.test.compile_steps)?;
 
     let single_runner = single::SingleCaseRunner::new(
@@ -72,53 +64,7 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         }
     }
 
-    save_best_scores(&best_score_path, best_scores)?;
-
-    Ok(())
-}
-
-fn load_setting_file() -> Result<Settings> {
-    let settings_str = std::fs::read_to_string(SETTING_FILE_PATH)?;
-    let settings = toml::from_str(&settings_str)?;
-    Ok(settings)
-}
-
-fn load_best_scores(path: impl AsRef<Path>) -> Result<HashMap<u64, NonZeroU64>> {
-    let Ok(file) = File::open(&path) else {
-        return Ok(HashMap::new());
-    };
-    let reader = BufReader::new(file);
-    let temp_map: HashMap<String, u64> =
-        serde_json::from_reader(reader).context("Failed to parse json")?;
-
-    let map = temp_map
-        .into_iter()
-        .flat_map(|(key, value)| {
-            let key = key.parse::<u64>().ok();
-            let value = NonZeroU64::new(value);
-            match (key, value) {
-                (Some(key), Some(value)) => Some((key, value)),
-                (_, _) => None,
-            }
-        })
-        .collect();
-
-    Ok(map)
-}
-
-fn save_best_scores(path: impl AsRef<Path>, best_scores: HashMap<u64, NonZeroU64>) -> Result<()> {
-    let json_map: BTreeMap<String, u64> = best_scores
-        .into_iter()
-        .map(|(key, value)| (format!("{:04}", key), value.get()))
-        .collect();
-
-    if let Some(parent) = path.as_ref().parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-
-    let file = File::create(path)?;
-    let writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(writer, &json_map)?;
+    io::save_best_scores(&best_score_path, best_scores)?;
 
     Ok(())
 }

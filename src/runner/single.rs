@@ -40,14 +40,14 @@ impl TestStep {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct TestCase {
+pub(super) struct TestCase {
     seed: u64,
     reference_score: Option<NonZeroU64>,
     objective: Objective,
 }
 
 impl TestCase {
-    pub(crate) const fn new(
+    pub(super) const fn new(
         seed: u64,
         reference_score: Option<NonZeroU64>,
         objective: Objective,
@@ -59,7 +59,7 @@ impl TestCase {
         }
     }
 
-    pub(crate) fn calc_relative_score(&self, new_score: NonZeroU64) -> f64 {
+    pub(super) fn calc_relative_score(&self, new_score: NonZeroU64) -> f64 {
         let Some(old_score) = self.reference_score else {
             return 100.0;
         };
@@ -70,7 +70,7 @@ impl TestCase {
         }
     }
 
-    pub(crate) fn is_best(&self, new_score: Option<NonZeroU64>) -> bool {
+    pub(super) fn is_best(&self, new_score: Option<NonZeroU64>) -> bool {
         let Some(new_score) = new_score else {
             return false;
         };
@@ -85,13 +85,13 @@ impl TestCase {
         }
     }
 
-    pub(crate) const fn seed(&self) -> u64 {
+    pub(super) const fn seed(&self) -> u64 {
         self.seed
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TestResult {
+pub(super) struct TestResult {
     test_case: TestCase,
     score: Result<NonZeroU64, String>,
     relative_score: Result<f64, String>,
@@ -99,7 +99,7 @@ pub(crate) struct TestResult {
 }
 
 impl TestResult {
-    pub(crate) fn new(
+    pub(super) fn new(
         test_case: TestCase,
         score: Result<NonZeroU64, String>,
         duration: Duration,
@@ -114,24 +114,24 @@ impl TestResult {
         }
     }
 
-    pub(crate) const fn test_case(&self) -> &TestCase {
+    pub(super) const fn test_case(&self) -> &TestCase {
         &self.test_case
     }
 
-    pub(crate) fn score(&self) -> &Result<NonZeroU64, String> {
+    pub(super) fn score(&self) -> &Result<NonZeroU64, String> {
         &self.score
     }
 
     /// Returns the score in log10 scale.
-    pub(crate) fn score_log10(&self) -> Result<f64, &String> {
+    pub(super) fn score_log10(&self) -> Result<f64, &String> {
         self.score.as_ref().map(|s| (s.get() as f64).log10())
     }
 
-    pub(crate) fn relative_score(&self) -> &Result<f64, String> {
+    pub(super) fn relative_score(&self) -> &Result<f64, String> {
         &self.relative_score
     }
 
-    pub(crate) const fn duration(&self) -> Duration {
+    pub(super) const fn duration(&self) -> Duration {
         self.duration
     }
 }
@@ -146,20 +146,20 @@ pub(crate) enum Objective {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct SingleCaseRunner {
+pub(super) struct SingleCaseRunner {
     steps: Vec<TestStep>,
     score_pattern: Regex,
 }
 
 impl SingleCaseRunner {
-    pub(crate) const fn new(steps: Vec<TestStep>, score_pattern: Regex) -> Self {
+    pub(super) const fn new(steps: Vec<TestStep>, score_pattern: Regex) -> Self {
         Self {
             steps,
             score_pattern,
         }
     }
 
-    pub(crate) fn run(&self, test_case: TestCase) -> TestResult {
+    pub(super) fn run(&self, test_case: TestCase) -> TestResult {
         let since = Instant::now();
         let result = self.run_steps(test_case.seed);
         let duration = since.elapsed();

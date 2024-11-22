@@ -6,14 +6,14 @@ use threadpool::ThreadPool;
 
 /// The runner for multiple cases.
 #[derive(Debug, Clone)]
-pub(crate) struct MultiCaseRunner {
+pub(super) struct MultiCaseRunner {
     single_runner: SingleCaseRunner,
     test_cases: Vec<TestCase>,
     threads: usize,
 }
 
 impl MultiCaseRunner {
-    pub(crate) fn new(
+    pub(super) fn new(
         single_runner: SingleCaseRunner,
         test_cases: Vec<TestCase>,
         threads: usize,
