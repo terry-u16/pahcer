@@ -25,7 +25,7 @@ impl MultiCaseRunner {
         }
     }
 
-    pub(crate) fn run(&mut self) -> TestStats {
+    pub(super) fn run(&mut self) -> TestStats {
         let rx = self.start_tests();
         self.collect_results(rx)
     }
@@ -218,11 +218,11 @@ impl ResultPrinter {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct TestStats {
-    results: Vec<TestResult>,
-    score_sum: u64,
-    score_sum_log10: f64,
-    relative_score_sum: f64,
+pub(super) struct TestStats {
+    pub(super) results: Vec<TestResult>,
+    pub(super) score_sum: u64,
+    pub(super) score_sum_log10: f64,
+    pub(super) relative_score_sum: f64,
 }
 
 impl TestStats {

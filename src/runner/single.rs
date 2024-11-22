@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
-use clap::{Command, ValueEnum};
+use clap::ValueEnum;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
     num::NonZeroU64,
-    path::{self, Path},
+    path::Path,
     time::{Duration, Instant},
 };
 
@@ -70,7 +70,11 @@ impl TestCase {
         }
     }
 
-    pub(crate) fn is_best(&self, new_score: NonZeroU64) -> bool {
+    pub(crate) fn is_best(&self, new_score: Option<NonZeroU64>) -> bool {
+        let Some(new_score) = new_score else {
+            return false;
+        };
+
         let Some(old_score) = self.reference_score.map(|s| s.get()) else {
             return true;
         };
@@ -139,15 +143,6 @@ pub(crate) enum Objective {
     Max,
     /// Minimize the score
     Min,
-}
-
-impl Objective {
-    fn is_best(&self, old_score: u64, new_score: u64) -> bool {
-        match self {
-            Self::Max => new_score >= old_score,
-            Self::Min => new_score <= old_score,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -313,16 +308,16 @@ mod test {
 
     #[test]
     fn test_is_best() {
-        let non_zero_50 = NonZeroU64::new(50).unwrap();
-        let non_zero_100 = NonZeroU64::new(100).unwrap();
-        let non_zero_200 = NonZeroU64::new(200).unwrap();
+        let non_zero_50 = NonZeroU64::new(50);
+        let non_zero_100 = NonZeroU64::new(100);
+        let non_zero_200 = NonZeroU64::new(200);
 
-        let test_case = TestCase::new(0, Some(non_zero_100), Objective::Max);
+        let test_case = TestCase::new(0, non_zero_100, Objective::Max);
         assert!(!test_case.is_best(non_zero_50));
         assert!(test_case.is_best(non_zero_100));
         assert!(test_case.is_best(non_zero_200));
 
-        let test_case = TestCase::new(0, Some(non_zero_100), Objective::Min);
+        let test_case = TestCase::new(0, non_zero_100, Objective::Min);
         assert!(test_case.is_best(non_zero_50));
         assert!(test_case.is_best(non_zero_100));
         assert!(!test_case.is_best(non_zero_200));

@@ -84,6 +84,7 @@ pub(crate) struct Test {
     pub(crate) start_seed: u64,
     pub(crate) end_seed: u64,
     pub(crate) threads: usize,
+    pub(crate) out_dir: String,
     pub(crate) compile_steps: Vec<CompileStep>,
     pub(crate) test_steps: Vec<TestStep>,
 }
@@ -93,6 +94,7 @@ impl Test {
         start_seed: u64,
         end_seed: u64,
         threads: usize,
+        out_dir: String,
         compile_steps: Vec<CompileStep>,
         test_steps: Vec<TestStep>,
     ) -> Self {
@@ -100,6 +102,7 @@ impl Test {
             start_seed,
             end_seed,
             threads,
+            out_dir,
             compile_steps,
             test_steps,
         }
@@ -126,7 +129,8 @@ pub(crate) fn gen_setting_file(args: &InitArgs) {
     let compile_steps = lang.compile_command();
     let test_steps = gen_run_steps(lang, args.is_interactive);
 
-    let test = Test::new(0, 100, 0, compile_steps, test_steps);
+    let out_dir = "./pahcer".to_string();
+    let test = Test::new(0, 100, 0, out_dir, compile_steps, test_steps);
 
     let setting = Settings::new(general, problem, test);
 
