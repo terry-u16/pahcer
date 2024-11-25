@@ -1,4 +1,5 @@
 use super::single::{SingleCaseRunner, TestCase, TestResult};
+use chrono::{DateTime, Local};
 use colored::Colorize;
 use num_format::{Locale, ToFormattedString};
 use std::sync::{mpsc, Arc};
@@ -26,11 +27,12 @@ impl MultiCaseRunner {
     }
 
     pub(super) fn run(&mut self) -> TestStats {
-        let rx = self.start_tests();
-        self.collect_results(rx)
+        let (rx, start_time) = self.start_tests();
+        self.collect_results(rx, start_time)
     }
 
-    fn start_tests(&mut self) -> mpsc::Receiver<TestResult> {
+    fn start_tests(&mut self) -> (mpsc::Receiver<TestResult>, DateTime<Local>) {
+        let start_time = Local::now();
         let thread_cnt = match self.threads {
             0 => num_cpus::get(),
             n => n,
@@ -50,10 +52,14 @@ impl MultiCaseRunner {
             });
         }
 
-        rx
+        (rx, start_time)
     }
 
-    fn collect_results(&mut self, rx: mpsc::Receiver<TestResult>) -> TestStats {
+    fn collect_results(
+        &mut self,
+        rx: mpsc::Receiver<TestResult>,
+        start_time: DateTime<Local>,
+    ) -> TestStats {
         let mut results = Vec::with_capacity(self.test_cases.len());
         let mut printer = ResultPrinter::new(self.test_cases.len());
 
@@ -67,7 +73,7 @@ impl MultiCaseRunner {
 
         results.sort_unstable_by_key(|r| r.test_case().seed());
 
-        let stats = TestStats::new(results);
+        let stats = TestStats::new(results, start_time);
 
         for row in printer.gen_stats_footer(&stats) {
             println!("{}", row);
@@ -223,10 +229,11 @@ pub(super) struct TestStats {
     pub(super) score_sum: u64,
     pub(super) score_sum_log10: f64,
     pub(super) relative_score_sum: f64,
+    pub(super) start_time: DateTime<Local>,
 }
 
 impl TestStats {
-    pub(crate) fn new(results: Vec<TestResult>) -> Self {
+    pub(crate) fn new(results: Vec<TestResult>, start_time: DateTime<Local>) -> Self {
         let score_sum = results
             .iter()
             .filter_map(|r| r.score().as_ref().ok().map(|s| s.get()))
@@ -247,6 +254,7 @@ impl TestStats {
             score_sum,
             score_sum_log10,
             relative_score_sum,
+            start_time,
         }
     }
 }
@@ -278,11 +286,7 @@ mod test {
             TestCase::new(2, NonZero::new(50), Objective::Max),
             TestCase::new(3, None, Objective::Max),
         ];
-        let mut runner = MultiCaseRunner {
-            single_runner,
-            test_cases,
-            threads: 0,
-        };
+        let mut runner = MultiCaseRunner::new(single_runner, test_cases, 0);
 
         let stats = runner.run();
 
@@ -318,7 +322,10 @@ mod test {
         rows.extend(printer.gen_record(&result1));
         rows.extend(printer.gen_record(&result2));
         rows.extend(printer.gen_record(&result3));
-        rows.extend(printer.gen_stats_footer(&TestStats::new(vec![result1, result2, result3])));
+        rows.extend(printer.gen_stats_footer(&TestStats::new(
+            vec![result1, result2, result3],
+            Local::now(),
+        )));
 
         let expected = vec![
             "|  Progress  | Seed |     Case Score      |    Average Score    |   Exec.   |",

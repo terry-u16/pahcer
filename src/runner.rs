@@ -15,6 +15,9 @@ pub(crate) struct RunArgs {
     /// Shuffle the test cases
     #[clap(short = 's', long = "shuffle")]
     shuffle: bool,
+    /// Comment for the run
+    #[clap(short = 'c', long = "comment", default_value = "")]
+    comment: String,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -36,7 +39,6 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         seed_range.end
     );
 
-    // TODO: reference_scoreの読み込み
     let mut test_cases = seed_range
         .map(|seed| {
             single::TestCase::new(
@@ -64,6 +66,8 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         }
     }
 
+    let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
+    io::save_summary_log(&summary_file_path, &stats, &args.comment)?;
     io::save_best_scores(&best_score_path, best_scores)?;
 
     Ok(())
