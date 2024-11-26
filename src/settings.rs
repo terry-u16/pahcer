@@ -2,9 +2,10 @@ use crate::runner::{
     compilie::CompileStep,
     single::{Objective, TestStep},
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Args, ValueEnum};
 use serde::{Deserialize, Serialize};
+use std::io::{BufWriter, Write as _};
 
 pub(crate) const SETTING_FILE_PATH: &str = "pahcer_config.toml";
 
@@ -109,7 +110,11 @@ impl Test {
     }
 }
 
-pub(crate) fn gen_setting_file(args: &InitArgs) {
+pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
+    let mut writer = BufWriter::new(std::fs::File::create_new(SETTING_FILE_PATH).context(
+        "Failed to create the setting file. Ensure that ./pahcer_config.toml does not exist.",
+    )?);
+
     let version = "0.1.0".to_string();
     let general = General::new(version);
 
@@ -134,14 +139,10 @@ pub(crate) fn gen_setting_file(args: &InitArgs) {
 
     let setting = Settings::new(general, problem, test);
 
-    let setting_str = toml::to_string_pretty(&setting).unwrap();
-    std::fs::write(SETTING_FILE_PATH, setting_str).unwrap();
-}
+    let setting_str = toml::to_string_pretty(&setting)?;
+    writeln!(writer, "{}", setting_str)?;
 
-pub(crate) fn load_setting_file() -> Result<Settings> {
-    let setting_str = std::fs::read_to_string(SETTING_FILE_PATH)?;
-    let setting = toml::from_str(&setting_str)?;
-    Ok(setting)
+    Ok(())
 }
 
 fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep> {

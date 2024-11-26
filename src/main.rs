@@ -22,7 +22,6 @@ enum Command {
 
 fn main() {
     let args = Cli::parse();
-    dbg!(&args);
 
     if let Err(e) = run_command(args) {
         eprintln!("{}", format!("Error: {:?}", e).yellow().bold());
@@ -33,9 +32,7 @@ fn main() {
 fn run_command(args: Cli) -> Result<(), anyhow::Error> {
     Ok(match args.command {
         Command::Init(args) => {
-            settings::gen_setting_file(&args);
-            let settings = settings::load_setting_file()?;
-            dbg!(settings);
+            settings::gen_setting_file(&args)?;
         }
         Command::Run(args) => {
             runner::run(args)?;
