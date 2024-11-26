@@ -5,7 +5,12 @@ use crate::runner::{
 use anyhow::{Context, Result};
 use clap::{Args, ValueEnum};
 use serde::{Deserialize, Serialize};
-use std::io::{BufWriter, Write as _};
+use std::{
+    ffi::OsStr,
+    fs::File,
+    io::{BufWriter, Write as _},
+    path::Path,
+};
 
 pub(crate) const SETTING_FILE_PATH: &str = "pahcer_config.toml";
 
@@ -134,13 +139,15 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
     let compile_steps = lang.compile_command();
     let test_steps = gen_run_steps(lang, args.is_interactive);
 
-    let out_dir = "./pahcer".to_string();
-    let test = Test::new(0, 100, 0, out_dir, compile_steps, test_steps);
+    let out_dir = "./pahcer";
+    let test = Test::new(0, 100, 0, out_dir.to_string(), compile_steps, test_steps);
 
     let setting = Settings::new(general, problem, test);
 
     let setting_str = toml::to_string_pretty(&setting)?;
     writeln!(writer, "{}", setting_str)?;
+
+    gen_gitignore(out_dir)?;
 
     Ok(())
 }
@@ -196,6 +203,22 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
             ),
         ]
     }
+}
+
+fn gen_gitignore(dir: impl AsRef<OsStr>) -> Result<()> {
+    let dir = Path::new(&dir);
+    std::fs::create_dir_all(&dir)?;
+
+    let path = dir.join(".gitignore");
+
+    if path.exists() {
+        return Ok(());
+    }
+
+    let mut writer = BufWriter::new(File::create(&path)?);
+    writeln!(writer, "*").context("Failed to write to .gitignore")?;
+
+    Ok(())
 }
 
 trait Language {
