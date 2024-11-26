@@ -1,0 +1,19 @@
+[general]
+version = "0.1.0"
+
+[problem]
+problem_name = "optuna-sample"
+objective = "Min"
+score_regex = '^\s*Score\s*=\s*(?P<score>\d+)\s*$'
+
+[test]
+start_seed = 0
+end_seed = 100
+threads = 0
+out_dir = "./pahcer"
+compile_steps = []
+
+[[test.test_steps]]
+program = "python"
+args = ["solution.py"]
+measure_time = true
