@@ -17,6 +17,7 @@ pub(crate) struct TestStep {
     stdin: Option<String>,
     stdout: Option<String>,
     stderr: Option<String>,
+    measure_time: bool,
 }
 
 impl TestStep {
@@ -27,6 +28,7 @@ impl TestStep {
         stdin: Option<String>,
         stdout: Option<String>,
         stderr: Option<String>,
+        measure_time: bool,
     ) -> Self {
         Self {
             program,
@@ -35,6 +37,7 @@ impl TestStep {
             stdin,
             stdout,
             stderr,
+            measure_time,
         }
     }
 }
@@ -160,12 +163,10 @@ impl SingleCaseRunner {
     }
 
     pub(super) fn run(&self, test_case: TestCase) -> TestResult {
-        let since = Instant::now();
         let result = self.run_steps(test_case.seed);
-        let duration = since.elapsed();
 
         match result {
-            Ok(outputs) => {
+            Ok((outputs, elapsed)) => {
                 let score = self.extract_score(&outputs);
 
                 // 0点以下の場合はWrong Answerとして扱う
@@ -176,21 +177,26 @@ impl SingleCaseRunner {
                     },
                     None => Err("Score not found".to_string()),
                 };
-                TestResult::new(test_case, score, duration)
+                TestResult::new(test_case, score, elapsed)
             }
-            Err(e) => TestResult::new(test_case, Err(format!("{:#}", e)), duration),
+            Err(e) => TestResult::new(test_case, Err(format!("{:#}", e)), Duration::ZERO),
         }
     }
 
-    fn run_steps(&self, seed: u64) -> Result<Vec<Vec<u8>>> {
+    fn run_steps(&self, seed: u64) -> Result<(Vec<Vec<u8>>, Duration)> {
         let mut outputs = vec![];
+        let mut elapsed = Duration::ZERO;
 
         for step in self.steps.iter() {
             let cmd = Self::build_cmd(step, seed)?;
-            Self::run_cmd(cmd, step, seed, &mut outputs)?;
+            let duration = Self::run_cmd(cmd, step, seed, &mut outputs)?;
+
+            if step.measure_time {
+                elapsed += duration;
+            }
         }
 
-        Ok(outputs)
+        Ok((outputs, elapsed))
     }
 
     fn build_cmd(step: &TestStep, seed: u64) -> Result<std::process::Command, anyhow::Error> {
@@ -217,10 +223,13 @@ impl SingleCaseRunner {
         step: &TestStep,
         seed: u64,
         outputs: &mut Vec<Vec<u8>>,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<Duration, anyhow::Error> {
+        let since = Instant::now();
         let output = cmd
             .output()
             .with_context(|| format!("Failed to run. command: {:?}", cmd))?;
+        let duration = since.elapsed();
+
         anyhow::ensure!(
             output.status.success(),
             "Failed to run ({}). command: {:?}",
@@ -243,7 +252,7 @@ impl SingleCaseRunner {
         outputs.push(output.stdout);
         outputs.push(output.stderr);
 
-        Ok(())
+        Ok(duration)
     }
 
     fn create_parent_dir_all(path: impl AsRef<OsStr>) -> Result<()> {
@@ -369,6 +378,6 @@ mod test {
 
     fn gen_teststep(program: &str, arg: Option<&str>) -> TestStep {
         let args = arg.iter().map(|s| s.to_string()).collect();
-        TestStep::new(program.to_string(), args, None, None, None, None)
+        TestStep::new(program.to_string(), args, None, None, None, None, true)
     }
 }

@@ -164,6 +164,7 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
             Some("./testcase/in/{SEED04}.txt".to_string()),
             Some("./testcase/out/{SEED04}.txt".to_string()),
             Some("./testcase/err/{SEED04}.txt".to_string()),
+            true,
         )]
     } else {
         vec![
@@ -174,6 +175,7 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
                 Some("./testcase/in/{SEED04}.txt".to_string()),
                 Some("./testcase/out/{SEED04}.txt".to_string()),
                 Some("./testcase/err/{SEED04}.txt".to_string()),
+                true,
             ),
             TestStep::new(
                 "cargo".to_string(),
@@ -189,6 +191,7 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
                 None,
                 None,
                 None,
+                false,
             ),
         ]
     }

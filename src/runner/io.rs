@@ -138,6 +138,7 @@ struct AllResultJson<'a> {
     total_score: u64,
     total_score_log10: f64,
     total_relative_score: f64,
+    max_elapsed_sec: f64,
     comment: &'a str,
     wa_seeds: Vec<u64>,
     cases: Vec<CaseResultJson>,
@@ -174,6 +175,11 @@ impl<'a> AllResultJson<'a> {
             .iter()
             .filter_map(|r| r.score().as_ref().err().map(|_| r.test_case().seed()))
             .collect();
+        let max_elapsed_sec = stats
+            .results
+            .iter()
+            .map(|r| r.duration().as_secs_f64())
+            .fold(0.0, f64::max);
 
         Self {
             start_time: stats.start_time,
@@ -181,6 +187,7 @@ impl<'a> AllResultJson<'a> {
             total_score: stats.score_sum,
             total_score_log10: stats.score_sum_log10,
             total_relative_score: stats.relative_score_sum,
+            max_elapsed_sec,
             comment,
             wa_seeds,
             cases,

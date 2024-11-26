@@ -56,7 +56,7 @@ impl MultiCaseRunner {
     fn start_tests(&mut self) -> (mpsc::Receiver<TestResult>, DateTime<Local>) {
         let start_time = Local::now();
         let thread_cnt = match self.threads {
-            0 => num_cpus::get(),
+            0 => num_cpus::get_physical(),
             n => n,
         };
 
@@ -156,6 +156,7 @@ mod test {
             None,
             None,
             None,
+            true,
         )];
         let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
         let test_cases = vec![

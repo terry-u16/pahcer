@@ -97,6 +97,18 @@ impl Printer for ConsolePrinter {
         };
         writeln!(writer, "Accepted               : {}", ac)?;
 
+        let max_time = stats
+            .results
+            .iter()
+            .map(|r| r.duration().as_millis())
+            .max()
+            .unwrap_or(0);
+        writeln!(
+            writer,
+            "Max Execution Time     : {} ms",
+            max_time.to_formatted_string(&Locale::en)
+        )?;
+
         Ok(())
     }
 }
@@ -233,6 +245,7 @@ Average Score          : 500
 Average Score (log10)  : 1.900
 Average Relative Score : 500.000
 Accepted               : \u{1b}[1;33m2 / 3\u{1b}[0m
+Max Execution Time     : 12,345 ms
 ";
 
         println!("[EXPECTED]");
