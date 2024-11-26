@@ -49,6 +49,7 @@ class Objective:
             trial.report(score, seed)
 
             if trial.should_prune():
+                print(f"Trial {trial.number} pruned.")
                 process.send_signal(subprocess.signal.SIGINT)
 
                 # It is recommended to return the value of the objective function at the current step
