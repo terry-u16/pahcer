@@ -22,7 +22,7 @@ pub(crate) struct RunArgs {
     #[clap(short = 'j', long = "json")]
     json: bool,
     /// Path to the setting file
-    #[clap(short = 's', long = "setting-file", default_value = SETTING_FILE_PATH)]
+    #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
     /// Freeze the best score
     #[clap(long = "freeze-best-scores")]
