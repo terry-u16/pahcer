@@ -45,7 +45,11 @@ class Objective:
 
             if trial.should_prune():
                 process.send_signal(subprocess.signal.SIGINT)
-                raise optuna.TrialPruned()
+
+                # It is recommended to return the value of the objective function at the current step
+                # instead of raising TrialPruned.
+                # This is a workaround to report the evaluation information of the pruned Trial to Optuna.
+                return sum(scores) / len(scores)
 
         return sum(scores) / len(scores)
 
