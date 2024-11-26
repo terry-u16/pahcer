@@ -11,19 +11,27 @@ class Objective:
         pass
 
     def __call__(self, trial: optuna.trial.Trial) -> float:
-        # TODO: Write your parameters here
+        # TODO: Write parameter suggestions here
         # for more information, see https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
         params = {
             "AHC_PARAM1": str(trial.suggest_float("param1", -5.0, 5.0, log=False)),
             "AHC_PARAM2": str(trial.suggest_float("param2", -5.0, 5.0, log=False)),
         }
+
         env = os.environ.copy()
         env.update(params)
 
         scores = []
 
         process = subprocess.Popen(
-            ["pahcer", "run", "--json", "--shuffle", "--no-result-file"],
+            [
+                "pahcer",
+                "run",
+                "--json",
+                "--shuffle",
+                "--no-result-file",
+                "--freeze-best-scores",
+            ],
             stdout=subprocess.PIPE,
             env=env,
         )
@@ -37,13 +45,15 @@ class Objective:
                 process.send_signal(subprocess.signal.SIGINT)
                 raise RuntimeError(result["error_message"])
 
-            # for absolute score problems
-            score = result["score"]
-
-            # for relative score problems
-            # score = math.log10(result["score"]) if result["score"] > 0.0 else 0.0
-
+            absolute_score = result["score"]  # noqa: F841
+            relative_score = result["relative_score"]  # noqa: F841
+            log10_score = math.log10(absolute_score) if absolute_score > 0.0 else 0.0  # noqa: F841
             seed = result["seed"]
+
+            # TODO: Customize the score extraction code here
+            score = absolute_score  # for absolute score problems
+            # score = relative_score    # for relative score problems
+            # score = log10_score       # for relative score problems (alternative)
 
             scores.append(score)
             trial.report(score, seed)
@@ -60,9 +70,8 @@ class Objective:
         return sum(scores) / len(scores)
 
 
-# Set the direction to minimize
+# TODO: Set the direction to minimize or maximize
 direction = "minimize"
-# ...or maximize
 # direction = "maximize"
 
 study = optuna.create_study(
@@ -72,13 +81,9 @@ study = optuna.create_study(
     sampler=optuna.samplers.TPESampler(),
 )
 
-objective = Objective()
-
-# Set the number of trials to 100
-study.optimize(objective, n_trials=100)
-
-# ...or set the timeout to 60 seconds
-# study.optimize(objective, timeout=60)
+# TODO: Set the timeout (seconds) or the number of trials
+study.optimize(Objective(), timeout=300)
+# study.optimize(objective, n_trials=100)
 
 print(f"best params = {study.best_params}")
 print(f"best score  = {study.best_value}")
