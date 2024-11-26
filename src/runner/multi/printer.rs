@@ -169,7 +169,7 @@ impl Printer for JsonPrinter {
             seed: result.test_case().seed(),
             score: result.score().as_ref().map(|s| s.get()).unwrap_or(0),
             relative_score: result.relative_score().as_ref().copied().unwrap_or(0.0),
-            duration_sec: result.duration().as_secs_f64(),
+            elapsed_sec: result.duration().as_secs_f64(),
             error_message: result
                 .score()
                 .as_ref()
@@ -195,7 +195,7 @@ struct JsonRecord {
     seed: u64,
     score: u64,
     relative_score: f64,
-    duration_sec: f64,
+    elapsed_sec: f64,
     error_message: String,
 }
 
@@ -259,9 +259,9 @@ Accepted               : \u{1b}[1;33m2 / 3\u{1b}[0m
             printer.print_case(&mut buf, result).unwrap();
         }
 
-        let expected = r##"{"progress":1,"seed":0,"score":1000,"relative_score":1000.0,"duration_sec":1.234,"error_message":""}
-{"progress":2,"seed":1,"score":500,"relative_score":500.0,"duration_sec":12.345,"error_message":""}
-{"progress":3,"seed":2,"score":0,"relative_score":0.0,"duration_sec":0.001,"error_message":"error"}
+        let expected = r##"{"progress":1,"seed":0,"score":1000,"relative_score":1000.0,"elapsed_sec":1.234,"error_message":""}
+{"progress":2,"seed":1,"score":500,"relative_score":500.0,"elapsed_sec":12.345,"error_message":""}
+{"progress":3,"seed":2,"score":0,"relative_score":0.0,"elapsed_sec":0.001,"error_message":"error"}
 "##;
 
         println!("[EXPECTED]");

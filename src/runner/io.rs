@@ -163,6 +163,7 @@ impl<'a> AllResultJson<'a> {
                 CaseResultJson::new(
                     r.test_case().seed(),
                     score,
+                    *r.relative_score().as_ref().unwrap_or(&0.0),
                     r.duration().as_secs_f64(),
                     error_message,
                 )
@@ -191,15 +192,23 @@ impl<'a> AllResultJson<'a> {
 struct CaseResultJson {
     seed: u64,
     score: u64,
+    relative_score: f64,
     elapsed_sec: f64,
     error_message: String,
 }
 
 impl CaseResultJson {
-    fn new(seed: u64, score: u64, elapsed_sec: f64, error_message: String) -> Self {
+    fn new(
+        seed: u64,
+        score: u64,
+        relative_score: f64,
+        elapsed_sec: f64,
+        error_message: String,
+    ) -> Self {
         Self {
             seed,
             score,
+            relative_score,
             elapsed_sec,
             error_message,
         }
