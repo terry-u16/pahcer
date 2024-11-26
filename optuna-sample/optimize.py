@@ -1,5 +1,5 @@
 import json
-import math  # noqa: F401
+import math
 import os
 import subprocess
 
@@ -82,7 +82,7 @@ study = optuna.create_study(
 )
 
 # TODO: Set the timeout (seconds) or the number of trials
-study.optimize(Objective(), timeout=300)
+study.optimize(Objective(), timeout=600)
 # study.optimize(objective, n_trials=100)
 
 print(f"best params = {study.best_params}")
