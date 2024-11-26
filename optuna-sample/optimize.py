@@ -32,6 +32,11 @@ class Objective:
         for line in process.stdout:
             result = json.loads(line)
 
+            # If an error occurs, stop the process and raise an exception
+            if result["error_message"] != "":
+                process.send_signal(subprocess.signal.SIGINT)
+                raise RuntimeError(result["error_message"])
+
             # for absolute score problems
             score = result["score"]
 
