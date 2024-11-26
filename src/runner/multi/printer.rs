@@ -2,6 +2,7 @@ use super::{TestResult, TestStats};
 use anyhow::Result;
 use colored::Colorize as _;
 use num_format::{Locale, ToFormattedString as _};
+use serde::Serialize;
 use std::io::Write;
 
 #[cfg_attr(test, mockall::automock)]
@@ -149,6 +150,55 @@ impl ConsolePrinter {
     }
 }
 
+pub(super) struct JsonPrinter {
+    completed_count: usize,
+}
+
+impl JsonPrinter {
+    pub(super) fn new() -> Self {
+        Self { completed_count: 0 }
+    }
+}
+
+impl Printer for JsonPrinter {
+    fn print_case(&mut self, writer: &mut dyn Write, result: &TestResult) -> Result<()> {
+        self.completed_count += 1;
+
+        let record = JsonRecord {
+            progress: self.completed_count,
+            seed: result.test_case().seed(),
+            score: result.score().as_ref().map(|s| s.get()).unwrap_or(0),
+            relative_score: result.relative_score().as_ref().copied().unwrap_or(0.0),
+            duration_sec: result.duration().as_secs_f64(),
+            error_message: result
+                .score()
+                .as_ref()
+                .err()
+                .map(|e| e.to_string())
+                .unwrap_or_default(),
+        };
+
+        writeln!(writer, "{}", serde_json::to_string(&record)?)?;
+
+        Ok(())
+    }
+
+    fn print_summary(&mut self, _writer: &mut dyn Write, _stats: &TestStats) -> Result<()> {
+        // do nothing
+        Ok(())
+    }
+}
+
+#[derive(Serialize)]
+struct JsonRecord {
+    progress: usize,
+    seed: u64,
+    score: u64,
+    relative_score: f64,
+    duration_sec: f64,
+    error_message: String,
+}
+
 #[cfg(test)]
 mod test {
     use crate::runner::{multi::TestCase, single::Objective};
@@ -158,36 +208,17 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_result_printer() {
+    fn test_console_printer() {
         let mut printer = ConsolePrinter::new(3);
 
-        let result1 = TestResult::new(
-            TestCase::new(0, NonZero::new(100), Objective::Max),
-            Ok(NonZero::new(1000).unwrap()),
-            Duration::from_millis(1234),
-        );
-
-        let result2 = TestResult::new(
-            TestCase::new(1, NonZero::new(100), Objective::Max),
-            Ok(NonZero::new(500).unwrap()),
-            Duration::from_millis(12345),
-        );
-
-        let result3 = TestResult::new(
-            TestCase::new(2, NonZero::new(100), Objective::Max),
-            Err("error".to_string()),
-            Duration::from_millis(1),
-        );
-
+        let test_results = gen_test_results();
         let mut buf = Box::new(vec![]);
-        printer.print_case(&mut buf, &result1).unwrap();
-        printer.print_case(&mut buf, &result2).unwrap();
-        printer.print_case(&mut buf, &result3).unwrap();
+
+        for result in test_results.iter() {
+            printer.print_case(&mut buf, result).unwrap();
+        }
         printer
-            .print_summary(
-                &mut buf,
-                &TestStats::new(vec![result1, result2, result3], Local::now()),
-            )
+            .print_summary(&mut buf, &TestStats::new(test_results, Local::now()))
             .unwrap();
 
         let expected =
@@ -214,5 +245,54 @@ Accepted               : \u{1b}[1;33m2 / 3\u{1b}[0m
         println!("{}", actual);
 
         assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_json_printer() {
+        let mut printer = JsonPrinter::new();
+
+        let test_results = gen_test_results();
+
+        let mut buf = Box::new(vec![]);
+
+        for result in test_results.iter() {
+            printer.print_case(&mut buf, result).unwrap();
+        }
+
+        let expected = r##"{"progress":1,"seed":0,"score":1000,"relative_score":1000.0,"duration_sec":1.234,"error_message":""}
+{"progress":2,"seed":1,"score":500,"relative_score":500.0,"duration_sec":12.345,"error_message":""}
+{"progress":3,"seed":2,"score":0,"relative_score":0.0,"duration_sec":0.001,"error_message":"error"}
+"##;
+
+        println!("[EXPECTED]");
+        println!("{}", expected);
+
+        println!();
+        println!("[ACTUAL]");
+
+        let actual = String::from_utf8(*buf).unwrap();
+        println!("{}", actual);
+
+        assert_eq!(expected, actual);
+    }
+
+    fn gen_test_results() -> Vec<TestResult> {
+        vec![
+            TestResult::new(
+                TestCase::new(0, NonZero::new(100), Objective::Max),
+                Ok(NonZero::new(1000).unwrap()),
+                Duration::from_millis(1234),
+            ),
+            TestResult::new(
+                TestCase::new(1, NonZero::new(100), Objective::Max),
+                Ok(NonZero::new(500).unwrap()),
+                Duration::from_millis(12345),
+            ),
+            TestResult::new(
+                TestCase::new(2, NonZero::new(100), Objective::Max),
+                Err("error".to_string()),
+                Duration::from_millis(1),
+            ),
+        ]
     }
 }

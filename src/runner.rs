@@ -18,6 +18,9 @@ pub(crate) struct RunArgs {
     /// Comment for the run
     #[clap(short = 'c', long = "comment", default_value = "")]
     comment: String,
+    /// Output the result in JSON format
+    #[clap(short = 'j', long = "json")]
+    json: bool,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -53,8 +56,11 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         test_cases.shuffle(&mut rand::thread_rng());
     }
 
-    let mut runner =
-        multi::MultiCaseRunner::new_console(single_runner, test_cases, settings.test.threads);
+    let mut runner = if args.json {
+        multi::MultiCaseRunner::new_json(single_runner, test_cases, settings.test.threads)
+    } else {
+        multi::MultiCaseRunner::new_console(single_runner, test_cases, settings.test.threads)
+    };
     let stats = runner.run()?;
 
     for result in stats.results.iter() {

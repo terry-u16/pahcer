@@ -25,6 +25,15 @@ impl MultiCaseRunner {
         Self::new(single_runner, test_cases, threads, printer)
     }
 
+    pub(super) fn new_json(
+        single_runner: SingleCaseRunner,
+        test_cases: Vec<TestCase>,
+        threads: usize,
+    ) -> Self {
+        let printer = Box::new(printer::JsonPrinter::new());
+        Self::new(single_runner, test_cases, threads, printer)
+    }
+
     fn new(
         single_runner: SingleCaseRunner,
         test_cases: Vec<TestCase>,
