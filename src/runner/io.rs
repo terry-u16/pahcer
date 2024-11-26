@@ -1,6 +1,11 @@
-use super::{multi, Settings, SETTING_FILE_PATH};
+use super::{
+    multi::{self, TestStats},
+    Settings, SETTING_FILE_PATH,
+};
 use anyhow::{Context as _, Result};
+use chrono::{DateTime, Local};
 use num_format::{Locale, ToFormattedString as _};
+use serde::Serialize;
 use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
@@ -15,10 +20,6 @@ const SUMMARY_SCORE_FILE: &str = "summary.md";
 
 pub(super) fn get_best_score_path(dir_path: impl AsRef<OsStr>) -> PathBuf {
     Path::new(&dir_path).join(Path::new(BEST_SCORE_FILE))
-}
-
-pub(super) fn get_summary_score_path(dir_path: impl AsRef<OsStr>) -> PathBuf {
-    Path::new(&dir_path).join(Path::new(SUMMARY_SCORE_FILE))
 }
 
 pub(super) fn load_setting_file() -> Result<Settings> {
@@ -66,6 +67,10 @@ pub(super) fn save_best_scores(
     serde_json::to_writer_pretty(writer, &json_map)?;
 
     Ok(())
+}
+
+pub(super) fn get_summary_score_path(dir_path: impl AsRef<OsStr>) -> PathBuf {
+    Path::new(&dir_path).join(Path::new(SUMMARY_SCORE_FILE))
 }
 
 pub(super) fn save_summary_log(
@@ -126,7 +131,101 @@ fn save_summary_log_inner(
     Ok(())
 }
 
-pub(super) fn create_parent_dir(path: impl AsRef<Path>) -> Result<()> {
+#[derive(Debug, Clone, Serialize)]
+struct AllResultJson<'a> {
+    start_time: DateTime<Local>,
+    case_count: usize,
+    total_score: u64,
+    total_score_log10: f64,
+    total_relative_score: f64,
+    comment: &'a str,
+    wa_seeds: Vec<u64>,
+    cases: Vec<CaseResultJson>,
+}
+
+impl<'a> AllResultJson<'a> {
+    fn new(stats: &TestStats, comment: &'a str) -> Self {
+        let cases = stats
+            .results
+            .iter()
+            .map(|r| {
+                let score = match r.score() {
+                    &Ok(score) => score.get(),
+                    Err(_) => 0,
+                };
+                let error_message = r
+                    .score()
+                    .as_ref()
+                    .err()
+                    .map(|e| e.to_string())
+                    .unwrap_or_default();
+
+                CaseResultJson::new(
+                    r.test_case().seed(),
+                    score,
+                    r.duration().as_secs_f64(),
+                    error_message,
+                )
+            })
+            .collect();
+        let wa_seeds = stats
+            .results
+            .iter()
+            .filter_map(|r| r.score().as_ref().err().map(|_| r.test_case().seed()))
+            .collect();
+
+        Self {
+            start_time: stats.start_time,
+            case_count: stats.results.len(),
+            total_score: stats.score_sum,
+            total_score_log10: stats.score_sum_log10,
+            total_relative_score: stats.relative_score_sum,
+            comment,
+            wa_seeds,
+            cases,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct CaseResultJson {
+    seed: u64,
+    score: u64,
+    elapsed_sec: f64,
+    error_message: String,
+}
+
+impl CaseResultJson {
+    fn new(seed: u64, score: u64, elapsed_sec: f64, error_message: String) -> Self {
+        Self {
+            seed,
+            score,
+            elapsed_sec,
+            error_message,
+        }
+    }
+}
+
+pub(super) fn get_json_log_path(dir_path: impl AsRef<OsStr>, stats: &TestStats) -> PathBuf {
+    let file_name = format!("result_{}.json", stats.start_time.format("%Y%m%d_%H%M%S"));
+    Path::new(&dir_path).join("json").join(file_name)
+}
+
+pub(super) fn save_json_log(
+    path: impl AsRef<Path>,
+    stats: &TestStats,
+    comment: &str,
+) -> Result<()> {
+    create_parent_dir(&path)?;
+    let file = File::create(path)?;
+    let writer = BufWriter::new(file);
+    let json = AllResultJson::new(stats, comment);
+    serde_json::to_writer_pretty(writer, &json)?;
+
+    Ok(())
+}
+
+fn create_parent_dir(path: impl AsRef<Path>) -> Result<()> {
     if let Some(parent) = path.as_ref().parent() {
         std::fs::create_dir_all(parent)?;
     }

@@ -66,9 +66,11 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         }
     }
 
+    io::save_best_scores(&best_score_path, best_scores)?;
     let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
     io::save_summary_log(&summary_file_path, &stats, &args.comment)?;
-    io::save_best_scores(&best_score_path, best_scores)?;
+    let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
+    io::save_json_log(&json_file_path, &stats, &args.comment)?;
 
     Ok(())
 }

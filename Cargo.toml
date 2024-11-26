@@ -6,7 +6,7 @@ description = "A tool to run tests for competitive programming"
 
 [dependencies]
 anyhow = "1.0.93"
-chrono = "0.4.38"
+chrono = { version = "0.4.38", features = ["serde"] }
 clap = { version = "4.5.21", features = ["derive"] }
 colored = "2.1.0"
 num-format = "0.4.4"
