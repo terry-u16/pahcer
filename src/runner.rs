@@ -53,8 +53,9 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         test_cases.shuffle(&mut rand::thread_rng());
     }
 
-    let mut runner = multi::MultiCaseRunner::new(single_runner, test_cases, settings.test.threads);
-    let stats = runner.run();
+    let mut runner =
+        multi::MultiCaseRunner::new_console(single_runner, test_cases, settings.test.threads);
+    let stats = runner.run()?;
 
     for result in stats.results.iter() {
         let Some(score) = result.score().as_ref().ok().copied() else {
