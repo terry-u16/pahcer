@@ -21,6 +21,9 @@ pub(crate) struct RunArgs {
     /// Output the result in JSON format
     #[clap(short = 'j', long = "json")]
     json: bool,
+    /// Freeze the best score
+    #[clap(long = "freeze-best-scores")]
+    freeze_best_scores: bool,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -73,7 +76,10 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         }
     }
 
-    io::save_best_scores(&best_score_path, best_scores)?;
+    if !args.freeze_best_scores {
+        io::save_best_scores(&best_score_path, best_scores)?;
+    }
+
     let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
     io::save_summary_log(&summary_file_path, &stats, &args.comment)?;
     let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
