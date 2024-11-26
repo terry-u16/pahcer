@@ -4,7 +4,7 @@ mod multi;
 pub(crate) mod single;
 
 use crate::settings::{Settings, SETTING_FILE_PATH};
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Context, Result};
 use clap::Args;
 use compilie::compile;
 use rand::prelude::*;
@@ -21,13 +21,17 @@ pub(crate) struct RunArgs {
     /// Output the result in JSON format
     #[clap(short = 'j', long = "json")]
     json: bool,
+    /// Path to the setting file
+    #[clap(short = 's', long = "setting-file", default_value = SETTING_FILE_PATH)]
+    setting_file: String,
     /// Freeze the best score
     #[clap(long = "freeze-best-scores")]
     freeze_best_scores: bool,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
-    let settings = io::load_setting_file()?;
+    let settings = io::load_setting_file(&args.setting_file)
+        .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
     let best_score_path = io::get_best_score_path(&settings.test.out_dir);
     let mut best_scores = io::load_best_scores(&best_score_path)?;
     compile(&settings.test.compile_steps)?;

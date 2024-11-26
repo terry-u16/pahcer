@@ -1,6 +1,6 @@
 use super::{
     multi::{self, TestStats},
-    Settings, SETTING_FILE_PATH,
+    Settings,
 };
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Local};
@@ -22,8 +22,8 @@ pub(super) fn get_best_score_path(dir_path: impl AsRef<OsStr>) -> PathBuf {
     Path::new(&dir_path).join(Path::new(BEST_SCORE_FILE))
 }
 
-pub(super) fn load_setting_file() -> Result<Settings> {
-    let settings_str = std::fs::read_to_string(SETTING_FILE_PATH)?;
+pub(super) fn load_setting_file(path: impl AsRef<OsStr>) -> Result<Settings> {
+    let settings_str = std::fs::read_to_string(Path::new(&path))?;
     let settings = toml::from_str(&settings_str)?;
     Ok(settings)
 }
