@@ -98,14 +98,14 @@ pub(super) struct TestResult {
     test_case: TestCase,
     score: Result<NonZeroU64, String>,
     relative_score: Result<f64, String>,
-    duration: Duration,
+    execution_time: Duration,
 }
 
 impl TestResult {
     pub(super) fn new(
         test_case: TestCase,
         score: Result<NonZeroU64, String>,
-        duration: Duration,
+        execution_time: Duration,
     ) -> Self {
         let relative_score = score.clone().map(|s| test_case.calc_relative_score(s));
 
@@ -113,7 +113,7 @@ impl TestResult {
             test_case,
             score,
             relative_score,
-            duration,
+            execution_time,
         }
     }
 
@@ -134,8 +134,8 @@ impl TestResult {
         &self.relative_score
     }
 
-    pub(super) const fn duration(&self) -> Duration {
-        self.duration
+    pub(super) const fn execution_time(&self) -> Duration {
+        self.execution_time
     }
 }
 
@@ -166,7 +166,7 @@ impl SingleCaseRunner {
         let result = self.run_steps(test_case.seed);
 
         match result {
-            Ok((outputs, elapsed)) => {
+            Ok((outputs, execution_time)) => {
                 let score = self.extract_score(&outputs);
 
                 // 0点以下の場合はWrong Answerとして扱う
@@ -177,7 +177,7 @@ impl SingleCaseRunner {
                     },
                     None => Err("Score not found".to_string()),
                 };
-                TestResult::new(test_case, score, elapsed)
+                TestResult::new(test_case, score, execution_time)
             }
             Err(e) => TestResult::new(test_case, Err(format!("{:#}", e)), Duration::ZERO),
         }
@@ -185,18 +185,18 @@ impl SingleCaseRunner {
 
     fn run_steps(&self, seed: u64) -> Result<(Vec<Vec<u8>>, Duration)> {
         let mut outputs = vec![];
-        let mut elapsed = Duration::ZERO;
+        let mut execution_time = Duration::ZERO;
 
         for step in self.steps.iter() {
             let cmd = Self::build_cmd(step, seed)?;
-            let duration = Self::run_cmd(cmd, step, seed, &mut outputs)?;
+            let elapsed = Self::run_cmd(cmd, step, seed, &mut outputs)?;
 
             if step.measure_time {
-                elapsed += duration;
+                execution_time += elapsed;
             }
         }
 
-        Ok((outputs, elapsed))
+        Ok((outputs, execution_time))
     }
 
     fn build_cmd(step: &TestStep, seed: u64) -> Result<std::process::Command, anyhow::Error> {
@@ -228,7 +228,7 @@ impl SingleCaseRunner {
         let output = cmd
             .output()
             .with_context(|| format!("Failed to run. command: {:?}", cmd))?;
-        let duration = since.elapsed();
+        let execution_time = since.elapsed();
 
         anyhow::ensure!(
             output.status.success(),
@@ -252,7 +252,7 @@ impl SingleCaseRunner {
         outputs.push(output.stdout);
         outputs.push(output.stderr);
 
-        Ok(duration)
+        Ok(execution_time)
     }
 
     fn create_parent_dir_all(path: impl AsRef<OsStr>) -> Result<()> {

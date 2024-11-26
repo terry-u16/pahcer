@@ -38,8 +38,8 @@ impl Printer for ConsolePrinter {
         let score = score.to_formatted_string(&Locale::en);
         let average_score = ((self.score_sum as f64 / self.completed_count as f64).round() as u64)
             .to_formatted_string(&Locale::en);
-        let duration = result
-            .duration()
+        let execution_time = result
+            .execution_time()
             .as_millis()
             .to_formatted_string(&Locale::en);
         let average_relative_score = self.relative_score_sum / self.completed_count as f64;
@@ -55,7 +55,7 @@ impl Printer for ConsolePrinter {
             relative_score,
             average_score,
             average_relative_score,
-            duration,
+            execution_time,
         );
 
         match result.score() {
@@ -100,7 +100,7 @@ impl Printer for ConsolePrinter {
         let max_time = stats
             .results
             .iter()
-            .map(|r| r.duration().as_millis())
+            .map(|r| r.execution_time().as_millis())
             .max()
             .unwrap_or(0);
         writeln!(
@@ -181,7 +181,7 @@ impl Printer for JsonPrinter {
             seed: result.test_case().seed(),
             score: result.score().as_ref().map(|s| s.get()).unwrap_or(0),
             relative_score: result.relative_score().as_ref().copied().unwrap_or(0.0),
-            elapsed_sec: result.duration().as_secs_f64(),
+            execution_time: result.execution_time().as_secs_f64(),
             error_message: result
                 .score()
                 .as_ref()
@@ -207,7 +207,7 @@ struct JsonRecord {
     seed: u64,
     score: u64,
     relative_score: f64,
-    elapsed_sec: f64,
+    execution_time: f64,
     error_message: String,
 }
 
@@ -272,9 +272,9 @@ Max Execution Time     : 12,345 ms
             printer.print_case(&mut buf, result).unwrap();
         }
 
-        let expected = r##"{"progress":1,"seed":0,"score":1000,"relative_score":1000.0,"elapsed_sec":1.234,"error_message":""}
-{"progress":2,"seed":1,"score":500,"relative_score":500.0,"elapsed_sec":12.345,"error_message":""}
-{"progress":3,"seed":2,"score":0,"relative_score":0.0,"elapsed_sec":0.001,"error_message":"error"}
+        let expected = r##"{"progress":1,"seed":0,"score":1000,"relative_score":1000.0,"execution_time":1.234,"error_message":""}
+{"progress":2,"seed":1,"score":500,"relative_score":500.0,"execution_time":12.345,"error_message":""}
+{"progress":3,"seed":2,"score":0,"relative_score":0.0,"execution_time":0.001,"error_message":"error"}
 "##;
 
         println!("[EXPECTED]");

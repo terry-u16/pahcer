@@ -138,7 +138,7 @@ struct AllResultJson<'a> {
     total_score: u64,
     total_score_log10: f64,
     total_relative_score: f64,
-    max_elapsed_sec: f64,
+    max_execution_time: f64,
     comment: &'a str,
     wa_seeds: Vec<u64>,
     cases: Vec<CaseResultJson>,
@@ -165,7 +165,7 @@ impl<'a> AllResultJson<'a> {
                     r.test_case().seed(),
                     score,
                     *r.relative_score().as_ref().unwrap_or(&0.0),
-                    r.duration().as_secs_f64(),
+                    r.execution_time().as_secs_f64(),
                     error_message,
                 )
             })
@@ -175,10 +175,10 @@ impl<'a> AllResultJson<'a> {
             .iter()
             .filter_map(|r| r.score().as_ref().err().map(|_| r.test_case().seed()))
             .collect();
-        let max_elapsed_sec = stats
+        let max_execution_time = stats
             .results
             .iter()
-            .map(|r| r.duration().as_secs_f64())
+            .map(|r| r.execution_time().as_secs_f64())
             .fold(0.0, f64::max);
 
         Self {
@@ -187,7 +187,7 @@ impl<'a> AllResultJson<'a> {
             total_score: stats.score_sum,
             total_score_log10: stats.score_sum_log10,
             total_relative_score: stats.relative_score_sum,
-            max_elapsed_sec,
+            max_execution_time,
             comment,
             wa_seeds,
             cases,
@@ -200,7 +200,7 @@ struct CaseResultJson {
     seed: u64,
     score: u64,
     relative_score: f64,
-    elapsed_sec: f64,
+    execution_time: f64,
     error_message: String,
 }
 
@@ -209,14 +209,14 @@ impl CaseResultJson {
         seed: u64,
         score: u64,
         relative_score: f64,
-        elapsed_sec: f64,
+        execution_time: f64,
         error_message: String,
     ) -> Self {
         Self {
             seed,
             score,
             relative_score,
-            elapsed_sec,
+            execution_time,
             error_message,
         }
     }
