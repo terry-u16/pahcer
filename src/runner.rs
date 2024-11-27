@@ -13,7 +13,7 @@ use regex::Regex;
 #[derive(Debug, Clone, Args)]
 pub(crate) struct RunArgs {
     /// Shuffle the test cases
-    #[clap(short = 's', long = "shuffle")]
+    #[clap(long = "shuffle")]
     shuffle: bool,
     /// Comment for the run
     #[clap(short = 'c', long = "comment", default_value = "")]

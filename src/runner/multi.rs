@@ -59,6 +59,7 @@ impl MultiCaseRunner {
             0 => num_cpus::get_physical(),
             n => n,
         };
+        let thread_cnt = thread_cnt.min(self.test_cases.len());
 
         let threadpool = ThreadPool::new(thread_cnt);
         let (tx, rx) = mpsc::channel();
