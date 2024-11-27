@@ -1,15 +1,20 @@
 import os
 import time
 
-# Get the parameters from the environment variables
-x = float(os.getenv("AHC_PARAM1"))
-y = float(os.getenv("AHC_PARAM2"))
+# Default values for x and y if the environment variables are not set
+DEFAULT_X = 1
+DEFAULT_Y = 1.0
 
-# f(x, y) = floor((x^2 + y^2) * 100000)
-score = int((x * x + y * y) * 100000)
+# Get the parameters from the environment variables
+x = int(os.getenv("AHC_X") or DEFAULT_X)
+y = float(os.getenv("AHC_Y") or DEFAULT_Y)
+
+# f(x, y) = x^2 + y^2
+f = x * x + y * y
 
 # Simulate the time taken to run the program
 time.sleep(1)
 
 # Print the score
+score = int(f * 1000000)
 print(f"Score = {score}")

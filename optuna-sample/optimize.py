@@ -6,18 +6,49 @@ import subprocess
 import optuna
 
 
+# TODO: Write parameter suggestions here
+def generate_params(trial: optuna.trial.Trial) -> dict[str, str]:
+    # for more information, see https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
+    params = {
+        "AHC_X": str(trial.suggest_int("x", -10, 10)),
+        "AHC_Y": str(trial.suggest_float("y", -10.0, 10.0)),
+    }
+
+    return params
+
+
+# TODO: Customize the score extraction code here
+def extract_score(result: dict[str, str]) -> float:
+    absolute_score = result["score"]  # noqa: F841
+    log10_score = math.log10(absolute_score) if absolute_score > 0.0 else 0.0  # noqa: F841
+    relative_score = result["relative_score"]  # noqa: F841
+
+    score = absolute_score  # for absolute score problems
+    # score = log10_score       # for relative score problems (alternative)
+    # score = relative_score    # for relative score problems
+
+    return score
+
+
+# TODO: Set the direction to minimize or maximize
+def get_direction() -> str:
+    direction = "minimize"
+    # direction = "maximize"
+    return direction
+
+
+# TODO: Set the timeout (seconds) or the number of trials
+def run_optimization(study: optuna.study.Study) -> None:
+    study.optimize(Objective(), timeout=300)
+    # study.optimize(Objective(), n_trials=100)
+
+
 class Objective:
     def __init__(self) -> None:
         pass
 
     def __call__(self, trial: optuna.trial.Trial) -> float:
-        # TODO: Write parameter suggestions here
-        # for more information, see https://optuna.readthedocs.io/en/stable/reference/generated/optuna.trial.Trial.html
-        params = {
-            "AHC_PARAM1": str(trial.suggest_float("param1", -5.0, 5.0, log=False)),
-            "AHC_PARAM2": str(trial.suggest_float("param2", -5.0, 5.0, log=False)),
-        }
-
+        params = generate_params(trial)
         env = os.environ.copy()
         env.update(params)
 
@@ -45,16 +76,8 @@ class Objective:
                 process.send_signal(subprocess.signal.SIGINT)
                 raise RuntimeError(result["error_message"])
 
-            absolute_score = result["score"]  # noqa: F841
-            relative_score = result["relative_score"]  # noqa: F841
-            log10_score = math.log10(absolute_score) if absolute_score > 0.0 else 0.0  # noqa: F841
+            score = extract_score(result)
             seed = result["seed"]
-
-            # TODO: Customize the score extraction code here
-            score = absolute_score  # for absolute score problems
-            # score = relative_score    # for relative score problems
-            # score = log10_score       # for relative score problems (alternative)
-
             scores.append(score)
             trial.report(score, seed)
 
@@ -70,20 +93,14 @@ class Objective:
         return sum(scores) / len(scores)
 
 
-# TODO: Set the direction to minimize or maximize
-direction = "minimize"
-# direction = "maximize"
-
 study = optuna.create_study(
-    direction=direction,
-    study_name="optuna-sample",
+    direction=get_direction(),
+    study_name="optuna-study",
     pruner=optuna.pruners.WilcoxonPruner(),
     sampler=optuna.samplers.TPESampler(),
 )
 
-# TODO: Set the timeout (seconds) or the number of trials
-study.optimize(Objective(), timeout=600)
-# study.optimize(objective, n_trials=100)
+run_optimization(study)
 
 print(f"best params = {study.best_params}")
 print(f"best score  = {study.best_value}")
