@@ -41,6 +41,14 @@ $ rustup update
 $ cargo install pahcer --locked
 ```
 
+## アンインストール
+
+アンインストールしたい場合は以下のコマンドを実行してください。
+
+```sh
+$ cargo uninstall pahcer
+```
+
 ## 使い方
 
 ### 1. ディレクトリ構成
@@ -346,6 +354,10 @@ pahcerは各実行ステップにおける標準出力・標準エラー出力�
 ##### `measure_time`
 
 実行時間の計測対象か否かをbool値で指定します。 `true` が指定されたテストステップの実行時間の合計値が最終的に出力されます。
+
+## ライセンス
+
+[MIT](https://opensource.org/license/MIT)または[Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0)のデュアルライセンスです。
 
 ## その他
 
