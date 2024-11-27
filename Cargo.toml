@@ -2,7 +2,13 @@
 name = "pahcer"
 version = "0.1.0"
 edition = "2021"
-description = "A tool to run tests for competitive programming"
+authors = ["terry_u16"]
+description = "A tool to run tests for AtCoder Heuristic Contest (AHC)"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/terry-u16/pahcer"
+readme = "README.md"
+keywords = ["competitive", "atcoder", "cli"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.93"
