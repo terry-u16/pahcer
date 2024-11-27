@@ -133,7 +133,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
     let problem = Problem::new(
         problem_name,
         args.objective,
-        r"^\s*Score\s*=\s*(?P<score>\d+)\s*$".to_string(),
+        r"(?m)^\s*Score\s*=\s*(?P<score>\d+)\s*$".to_string(),
     );
 
     let compile_steps = lang.compile_command();
@@ -153,7 +153,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
 }
 
 fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep> {
-    let (test_command, test_args) = lang.test_command();
+    let (test_command, test_args) = lang.test_command(is_interactive);
 
     if is_interactive {
         let mut args = vec![
@@ -169,9 +169,9 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
             "cargo".to_string(),
             args,
             Some("./tools".to_string()),
-            Some("./in/{SEED04}.txt".to_string()),
-            Some("./out/{SEED04}.txt".to_string()),
-            Some("./err/{SEED04}.txt".to_string()),
+            Some("./tools/in/{SEED04}.txt".to_string()),
+            Some("./tools/out/{SEED04}.txt".to_string()),
+            Some("./tools/err/{SEED04}.txt".to_string()),
             true,
         )]
     } else {
@@ -223,7 +223,7 @@ fn gen_gitignore(dir: impl AsRef<OsStr>) -> Result<()> {
 
 trait Language {
     fn compile_command(&self) -> Vec<CompileStep>;
-    fn test_command(&self) -> (String, Vec<String>);
+    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>);
 }
 
 struct Rust {
@@ -260,8 +260,12 @@ impl Language for Rust {
         ]
     }
 
-    fn test_command(&self) -> (String, Vec<String>) {
-        (format!("./{}", self.problem_name), vec![])
+    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
+        if is_interactive {
+            (format!("../{}", self.problem_name), vec![])
+        } else {
+            (format!("./{}", self.problem_name), vec![])
+        }
     }
 }
 
@@ -280,8 +284,12 @@ impl Language for Cpp {
         )]
     }
 
-    fn test_command(&self) -> (String, Vec<String>) {
-        ("./a.out".to_string(), vec![])
+    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
+        if is_interactive {
+            return ("../a.out".to_string(), vec![]);
+        } else {
+            return ("./a.out".to_string(), vec![]);
+        }
     }
 }
 
@@ -292,7 +300,11 @@ impl Language for Python {
         vec![]
     }
 
-    fn test_command(&self) -> (String, Vec<String>) {
-        ("python".to_string(), vec!["main.py".to_string()])
+    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
+        if is_interactive {
+            ("python".to_string(), vec!["../main.py".to_string()])
+        } else {
+            ("python".to_string(), vec!["./main.py".to_string()])
+        }
     }
 }
