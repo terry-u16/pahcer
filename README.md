@@ -75,6 +75,7 @@ ahc000       (プロジェクトルート)
 ahc000       (プロジェクトルート)
 ├ src
 │ └ main.rs  (解答プログラムのコード)
+├ targets    (ビルド成果物フォルダ)
 ├ Cargo.toml
 └ tools      (AtCoder提供の公式ローカルテストツール)
   ├ src
@@ -97,6 +98,8 @@ $ pahcer init -p <PROBLEM_NAME> -o <OBJECTIVE> -l <LANGUAGE> [-i]
   - `cpp` : C++
   - `python` : Python
   - `rust` : Rust
+    - Rustを使用する場合、 `cargo.toml` の `package.name` と `patcher init` の `<PROBLEM_NAME>` を一致させないと設定ファイルの編集が必要になります。
+    - また、Rustで `targets` ディレクトリがプロジェクトルート直下にない場合も同様です。cargo-competeを使用している場合などは注意してください。
 - `-i` オプションはインタラクティブ問題の時に設定してください。
 
 実行すると、設定ファイルが `./pahcer_config.toml` に生成されます。また、テストケースの実行結果が格納される `./pahcer` ディレクトリが生成されます。
