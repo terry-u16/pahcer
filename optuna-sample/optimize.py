@@ -54,15 +54,20 @@ class Objective:
 
         scores = []
 
+        cmd = [
+            "pahcer",
+            "run",
+            "--json",
+            "--shuffle",
+            "--no-result-file",
+            "--freeze-best-scores",
+        ]
+
+        if trial.number != 0:
+            cmd.append("--no-compile")
+
         process = subprocess.Popen(
-            [
-                "pahcer",
-                "run",
-                "--json",
-                "--shuffle",
-                "--no-result-file",
-                "--freeze-best-scores",
-            ],
+            cmd,
             stdout=subprocess.PIPE,
             env=env,
         )
@@ -85,10 +90,23 @@ class Objective:
                 print(f"Trial {trial.number} pruned.")
                 process.send_signal(subprocess.signal.SIGINT)
 
-                # It is recommended to return the value of the objective function at the current step
-                # instead of raising TrialPruned.
-                # This is a workaround to report the evaluation information of the pruned Trial to Optuna.
-                return sum(scores) / len(scores)
+                objective_value = sum(scores) / len(scores)
+                is_better_than_best = (
+                    trial.study.direction == optuna.study.StudyDirection.MINIMIZE
+                    and objective_value < trial.study.best_value
+                ) or (
+                    trial.study.direction == optuna.study.StudyDirection.MAXIMIZE
+                    and objective_value > trial.study.best_value
+                )
+
+                if is_better_than_best:
+                    # Avoid updating the best value
+                    raise optuna.TrialPruned()
+                else:
+                    # It is recommended to return the value of the objective function at the current step
+                    # instead of raising TrialPruned.
+                    # This is a workaround to report the evaluation information of the pruned Trial to Optuna.
+                    return sum(scores) / len(scores)
 
         return sum(scores) / len(scores)
 

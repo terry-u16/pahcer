@@ -138,7 +138,7 @@ f = x * x + y * y
 `optimize.py` では、内部で以下のような形でpahcerを呼び出しています。このときに渡している引数の意図について説明します。
 
 ```sh
-$ pahcer run --json --shuffle --no-result-file --freeze-best-scores
+$ pahcer run --json --shuffle --no-result-file --freeze-best-scores [--no-compile]
 ```
 
 #### `--json`
@@ -156,3 +156,7 @@ Optunaでは多数の試行を行うため、試行の度にファイル出力�
 #### `--freeze-best-scores`
 
 試行の度にベスト解を更新すると、後から実行する試行の方が相対スコアを出しにくくなり不利になってしまうため、ベスト解を更新しない設定としています。
+
+#### `--no-compile`
+
+2回目以降の実行時はコンパイル不要のため、このオプションを渡しています。

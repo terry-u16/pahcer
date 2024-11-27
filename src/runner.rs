@@ -30,6 +30,9 @@ pub(crate) struct RunArgs {
     /// Do not output the result file
     #[clap(long = "no-result-file")]
     no_result_file: bool,
+    /// Do not compile the code
+    #[clap(long = "no-compile")]
+    no_compile: bool,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -37,7 +40,10 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
     let best_score_path = io::get_best_score_path(&settings.test.out_dir);
     let mut best_scores = io::load_best_scores(&best_score_path)?;
-    compile(&settings.test.compile_steps)?;
+
+    if !args.no_compile {
+        compile(&settings.test.compile_steps)?;
+    }
 
     let single_runner = single::SingleCaseRunner::new(
         settings.test.test_steps.clone(),
