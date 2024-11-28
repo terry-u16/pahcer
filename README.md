@@ -207,6 +207,7 @@ $ pahcer init [OPTIONS] -p <PROBLEM_NAME> -o <OBJECTIVE> -l <LANGAGE>
     - `cpp` : C++
     - `python` : Python
     - `rust` : Rust
+    - `go` : Go
 - `-i`, `--interactive`
   - インタラクティブ問題の際に指定します。
 
