@@ -61,8 +61,8 @@ impl Printer for ConsolePrinter {
         match result.score() {
             Ok(_) => writeln!(writer, "{}", record)?,
             Err(e) => {
-                writeln!(writer, "{}", record.yellow().to_string())?;
-                writeln!(writer, "{}", e.to_string().yellow().to_string())?;
+                writeln!(writer, "{}", record.yellow())?;
+                writeln!(writer, "{}", e.to_string().yellow())?;
             }
         };
 
@@ -221,6 +221,7 @@ mod test {
 
     #[test]
     fn test_console_printer() {
+        colored::control::set_override(true);
         let mut printer = ConsolePrinter::new(3);
 
         let test_results = gen_test_results();
