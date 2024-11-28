@@ -246,7 +246,7 @@ impl Language for Rust {
             ),
             CompileStep::new(
                 "rm".to_string(),
-                vec![format!("./{}", self.problem_name), "-f".to_string()],
+                vec!["-f".to_string(), format!("./{}", self.problem_name)],
                 None,
             ),
             CompileStep::new(
