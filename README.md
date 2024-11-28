@@ -41,6 +41,25 @@ $ rustup update
 $ cargo install pahcer --locked
 ```
 
+## バージョンアップ
+
+`cargo-update` を使用する方法と素のCargoを使う方法があります。前者がオススメです。
+
+### `cargo-update` を使う方法
+
+```sh
+$ cargo install cargo-update  # 初回のみ必要
+$ cargo install-update pahcer
+```
+
+### 素のCargoを使う方法
+
+更新がなかった場合でも都度コンパイル処理が走るので少し重いです。
+
+```sh
+$ cargo install -f pahcer
+```
+
 ## アンインストール
 
 アンインストールしたい場合は以下のコマンドを実行してください。
