@@ -221,6 +221,7 @@ mod test {
 
     #[test]
     fn test_console_printer() {
+        colored::control::set_override(true);
         let mut printer = ConsolePrinter::new(3);
 
         let test_results = gen_test_results();
@@ -262,7 +263,6 @@ Max Execution Time     : 12,345 ms
 
     #[test]
     fn test_json_printer() {
-        colored::control::set_override(true);
         let mut printer = JsonPrinter::new();
 
         let test_results = gen_test_results();
