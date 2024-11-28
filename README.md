@@ -41,6 +41,25 @@ $ rustup update
 $ cargo install pahcer --locked
 ```
 
+## バージョンアップ
+
+`cargo-update` を使用する方法と素のCargoを使う方法があります。前者がオススメです。
+
+### `cargo-update` を使う方法
+
+```sh
+$ cargo install cargo-update  # 初回のみ必要
+$ cargo install-update pahcer
+```
+
+### 素のCargoを使う方法
+
+更新がなかった場合でも都度コンパイル処理が走るので少し重いです。
+
+```sh
+$ cargo install -f pahcer
+```
+
 ## アンインストール
 
 アンインストールしたい場合は以下のコマンドを実行してください。
@@ -152,7 +171,7 @@ $ pahcer run
 - `Case Score` : 当該テストケースのスコアです。
   - `Score` : 実スコア（正の整数値のみ許容）です。0点の場合はWA扱いとなります。
   - `Relative` : ローカルでのベストスコアを100としたときの相対スコアです。
-    - `OBJECTIVE = max` のときは `100 * YOURS / MAX` 、 `OBJECTIVE = min` のときは `100 * MAX / YOURS` で計算されます。
+    - `OBJECTIVE = max` のときは `100 * YOURS / BEST` 、 `OBJECTIVE = min` のときは `100 * BEST / YOURS` で計算されます。
 - `Average Score` : その時点までの平均スコアです。
   - `Score` : 実スコアの平均値です。
   - `Relative` : 相対スコアの平均値です。
@@ -272,7 +291,7 @@ $ pahcer run -c 焼きなまし高速化バージョン -j --shuffle --setting-f
 
 全般に関する設定です。
 
-#### `verison`
+#### `version`
 
 設定ファイルのバージョンです。
 
@@ -375,3 +394,4 @@ pahcerは各実行ステップにおける標準出力・標準エラー出力�
 
 - AHC期間中は質問・要望・不具合対応ができない可能性が高いです。ご了承ください。
 - pahcerという名前は pacer (伴走者) + ahc から来ています。ペーサーと呼んでください。
+- 作者は `pahcer` をよく `pacher` とtypoします。必要に応じてエイリアスを設定するとよいです。
