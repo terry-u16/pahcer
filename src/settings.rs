@@ -121,7 +121,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
         "Failed to create the setting file. Ensure that ./pahcer_config.toml does not exist.",
     )?);
 
-    let version = "0.1.0".to_string();
+    let version = env!("CARGO_PKG_VERSION").to_string();
     let general = General::new(version);
 
     let lang: Box<dyn Language> = match args.langage {
