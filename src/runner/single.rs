@@ -267,7 +267,7 @@ impl SingleCaseRunner {
     fn write_output(path: impl AsRef<OsStr>, contents: &[u8]) -> Result<()> {
         let path = Path::new(&path);
         Self::create_parent_dir_all(path)?;
-        std::fs::write(&path, contents)?;
+        std::fs::write(path, contents)?;
 
         Ok(())
     }
@@ -275,14 +275,13 @@ impl SingleCaseRunner {
     fn extract_score(&self, outputs: &[Vec<u8>]) -> Option<f64> {
         outputs
             .iter()
-            .map(|s| {
+            .filter_map(|s| {
                 let s = String::from_utf8_lossy(s);
                 self.score_pattern
                     .captures_iter(&s)
-                    .filter_map(|m| m.name("score").map(|s| s.as_str().parse().ok()).flatten())
+                    .filter_map(|m| m.name("score").and_then(|s| s.as_str().parse().ok()))
                     .last()
             })
-            .flatten()
             .last()
     }
 
@@ -295,11 +294,9 @@ impl SingleCaseRunner {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::cell::LazyCell;
 
     const TEST_CASE: TestCase = TestCase::new(42, None, Objective::Max);
-    const SCORE_REGEX: LazyCell<Regex> =
-        LazyCell::new(|| Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
+    thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
     #[test]
     fn test_calc_relative_score() {
@@ -345,7 +342,7 @@ mod test {
     #[test]
     fn run_test_ok() {
         let steps = vec![gen_teststep("echo", Some("Score = 1234"))];
-        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let runner = SingleCaseRunner::new(steps, get_regex());
         let result = runner.run(TEST_CASE);
         assert_eq!(result.score(), &Ok(NonZeroU64::new(1234).unwrap()));
     }
@@ -353,7 +350,7 @@ mod test {
     #[test]
     fn run_test_score_zero() {
         let steps = vec![gen_teststep("echo", Some("Score = 0"))];
-        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let runner = SingleCaseRunner::new(steps, get_regex());
         let result = runner.run(TEST_CASE);
 
         // 0点以下はWrong Answerとして扱う
@@ -363,7 +360,7 @@ mod test {
     #[test]
     fn run_test_fail() {
         let steps = vec![gen_teststep("false", None)];
-        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let runner = SingleCaseRunner::new(steps, get_regex());
         let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
@@ -371,7 +368,7 @@ mod test {
     #[test]
     fn run_test_invalid_output() {
         let steps = vec![gen_teststep("echo", Some("invalid_output"))];
-        let runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let runner = SingleCaseRunner::new(steps, get_regex());
         let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
@@ -379,5 +376,9 @@ mod test {
     fn gen_teststep(program: &str, arg: Option<&str>) -> TestStep {
         let args = arg.iter().map(|s| s.to_string()).collect();
         TestStep::new(program.to_string(), args, None, None, None, None, true)
+    }
+
+    fn get_regex() -> Regex {
+        SCORE_REGEX.with(|r| r.clone())
     }
 }

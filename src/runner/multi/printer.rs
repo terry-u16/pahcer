@@ -61,8 +61,8 @@ impl Printer for ConsolePrinter {
         match result.score() {
             Ok(_) => writeln!(writer, "{}", record)?,
             Err(e) => {
-                writeln!(writer, "{}", record.yellow().to_string())?;
-                writeln!(writer, "{}", e.to_string().yellow().to_string())?;
+                writeln!(writer, "{}", record.yellow())?;
+                writeln!(writer, "{}", e.to_string().yellow())?;
             }
         };
 

@@ -30,12 +30,13 @@ fn main() {
 }
 
 fn run_command(args: Cli) -> Result<(), anyhow::Error> {
-    Ok(match args.command {
+    match args.command {
         Command::Init(args) => {
             settings::gen_setting_file(&args)?;
         }
         Command::Run(args) => {
             runner::run(args)?;
         }
-    })
+    };
+    Ok(())
 }

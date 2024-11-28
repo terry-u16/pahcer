@@ -209,7 +209,7 @@ fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep>
 
 fn gen_gitignore(dir: impl AsRef<OsStr>) -> Result<()> {
     let dir = Path::new(&dir);
-    std::fs::create_dir_all(&dir)?;
+    std::fs::create_dir_all(dir)?;
 
     let path = dir.join(".gitignore");
 
@@ -288,9 +288,9 @@ impl Language for Cpp {
 
     fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
         if is_interactive {
-            return ("../a.out".to_string(), vec![]);
+            ("../a.out".to_string(), vec![])
         } else {
-            return ("./a.out".to_string(), vec![]);
+            ("./a.out".to_string(), vec![])
         }
     }
 }
@@ -319,9 +319,9 @@ impl Language for Go {
             "go".to_string(),
             vec![
                 "build".to_string(),
-            "-o".to_string(), 
-            "a.out".to_string(),
-            "main.go".to_string(),
+                "-o".to_string(),
+                "a.out".to_string(),
+                "main.go".to_string(),
             ],
             None,
         )]
@@ -329,9 +329,9 @@ impl Language for Go {
 
     fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
         if is_interactive {
-            return ("../a.out".to_string(), vec![]);
+            ("../a.out".to_string(), vec![])
         } else {
-            return ("./a.out".to_string(), vec![]);
+            ("./a.out".to_string(), vec![])
         }
     }
 }

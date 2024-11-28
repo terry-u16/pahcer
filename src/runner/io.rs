@@ -78,7 +78,7 @@ pub(super) fn save_summary_log(
     stats: &multi::TestStats,
     comment: &str,
 ) -> Result<()> {
-    let mut writer = match OpenOptions::new().write(true).append(true).open(&path) {
+    let mut writer = match OpenOptions::new().append(true).open(&path) {
         Ok(file) => BufWriter::new(file),
         Err(_) => {
             create_parent_dir(&path)?;
@@ -120,7 +120,7 @@ fn save_summary_log_inner(
         .to_formatted_string(&Locale::en);
 
     let score_log10 = stats.score_sum_log10;
-    let average_score_log10 = stats.score_sum_log10 as f64 / stats.results.len() as f64;
+    let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
 
     writeln!(
         writer,

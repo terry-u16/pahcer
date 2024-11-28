@@ -143,10 +143,9 @@ mod test {
     use crate::runner::single::{Objective, TestStep};
     use printer::MockPrinter;
     use regex::Regex;
-    use std::{cell::LazyCell, num::NonZero};
+    use std::num::NonZero;
 
-    const SCORE_REGEX: LazyCell<Regex> =
-        LazyCell::new(|| Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
+    thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
     #[test]
     fn test_multi_case_runner() {
@@ -159,7 +158,7 @@ mod test {
             None,
             true,
         )];
-        let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.clone());
+        let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.with(|r| r.clone()));
         let test_cases = vec![
             TestCase::new(0, NonZero::new(100), Objective::Max),
             TestCase::new(1, NonZero::new(200), Objective::Max),
