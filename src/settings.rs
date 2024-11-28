@@ -38,6 +38,7 @@ enum Lang {
     Rust,
     Cpp,
     Python,
+    Go,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,6 +128,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
         Lang::Rust => Box::new(Rust::new(args.problem_name.clone())),
         Lang::Cpp => Box::new(Cpp),
         Lang::Python => Box::new(Python),
+        Lang::Go => Box::new(Go),
     };
 
     let problem_name = args.problem_name.clone();
@@ -305,6 +307,31 @@ impl Language for Python {
             ("python".to_string(), vec!["../main.py".to_string()])
         } else {
             ("python".to_string(), vec!["./main.py".to_string()])
+        }
+    }
+}
+
+struct Go;
+
+impl Language for Go {
+    fn compile_command(&self) -> Vec<CompileStep> {
+        vec![CompileStep::new(
+            "go".to_string(),
+            vec![
+                "build".to_string(),
+            "-o".to_string(), 
+            "a.out".to_string(),
+            "main.go".to_string(),
+            ],
+            None,
+        )]
+    }
+
+    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
+        if is_interactive {
+            return ("../a.out".to_string(), vec![]);
+        } else {
+            return ("./a.out".to_string(), vec![]);
         }
     }
 }
