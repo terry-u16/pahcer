@@ -90,6 +90,16 @@ ahc000       (プロジェクトルート)
   └ in
 ```
 
+#### Go
+
+```text
+ahc000       (プロジェクトルート)
+├ main.go   (解答プログラムのコード)
+└ tools      (AtCoder提供の公式ローカルテストツール)
+  ├ src
+  └ in
+```
+
 ### 2. 初期設定
 
 以下を実行して、初期設定を行います。
@@ -108,6 +118,7 @@ $ pahcer init -p <PROBLEM_NAME> -o <OBJECTIVE> -l <LANGUAGE> [-i]
   - `rust` : Rust
     - Rustを使用する場合、 `cargo.toml` の `package.name` と `patcher init` の `<PROBLEM_NAME>` を一致させないと設定ファイルの編集が必要になります。
     - また、Rustで `targets` ディレクトリがプロジェクトルート直下にない場合も同様です。cargo-competeを使用している場合などは注意してください。
+  - `go` : Go
 - `-i` オプションはインタラクティブ問題の時に設定してください。
 
 実行すると、設定ファイルが `./pahcer_config.toml` に生成されます。また、テストケースの実行結果が格納される `./pahcer` ディレクトリが生成されます。
@@ -196,6 +207,7 @@ $ pahcer init [OPTIONS] -p <PROBLEM_NAME> -o <OBJECTIVE> -l <LANGAGE>
     - `cpp` : C++
     - `python` : Python
     - `rust` : Rust
+    - `go` : Go
 - `-i`, `--interactive`
   - インタラクティブ問題の際に指定します。
 
