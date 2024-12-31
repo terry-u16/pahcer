@@ -248,10 +248,12 @@ impl Language for Rust {
                 "cargo".to_string(),
                 vec!["build".to_string(), "--release".to_string()],
                 None,
+                None,
             ),
             CompileStep::new(
                 "rm".to_string(),
                 vec!["-f".to_string(), format!("./{}", self.problem_name)],
+                None,
                 None,
             ),
             CompileStep::new(
@@ -260,6 +262,7 @@ impl Language for Rust {
                     format!("./target/release/{}", self.problem_name),
                     format!("./{}", self.problem_name),
                 ],
+                None,
                 None,
             ),
         ]
@@ -285,6 +288,7 @@ impl Language for Cpp {
                 "-O2".to_string(),
                 "main.cpp".to_string(),
             ],
+            None,
             None,
         )]
     }
@@ -326,6 +330,7 @@ impl Language for Go {
                 "a.out".to_string(),
                 "main.go".to_string(),
             ],
+            None,
             None,
         )]
     }
