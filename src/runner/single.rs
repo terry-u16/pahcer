@@ -18,6 +18,7 @@ pub(crate) struct TestStep {
     stdout: Option<String>,
     stderr: Option<String>,
     measure_time: bool,
+    os_regex: Option<String>,
 }
 
 impl TestStep {
@@ -29,6 +30,7 @@ impl TestStep {
         stdout: Option<String>,
         stderr: Option<String>,
         measure_time: bool,
+        os_regex: Option<String>,
     ) -> Self {
         Self {
             program,
@@ -38,6 +40,7 @@ impl TestStep {
             stdout,
             stderr,
             measure_time,
+            os_regex,
         }
     }
 }
@@ -188,6 +191,24 @@ impl SingleCaseRunner {
         let mut execution_time = Duration::ZERO;
 
         for step in self.steps.iter() {
+            if let Some(os_regex) = &step.os_regex {
+                // os_regex が指定された場合は現在実行中の OS がその正規表現にマッチしたときだけ処理を行う
+                // 本当は正規表現オブジェクト使いまわすために Option<Regex> にしたいが TestStep を Serialize するために Option<String> のままにしている
+                match Regex::new(os_regex) {
+                    Ok(re) => {
+                        if !re.is_match(std::env::consts::OS) {
+                            // 正規表現がマッチしなかった場合はその teststep はスキップする
+                            continue;
+                        }
+                    }
+                    Err(error) => {
+                        // エラー終了にすべき？
+                        eprintln!("Invalid regex found in test step.\n{}", error);
+                        continue;
+                    }
+                }
+            }
+
             let cmd = Self::build_cmd(step, seed)?;
             let elapsed = Self::run_cmd(cmd, step, seed, &mut outputs)?;
 
@@ -373,9 +394,40 @@ mod test {
         assert!(result.score.is_err());
     }
 
+    #[test]
+    fn run_test_os_specific_ok() {
+        // 成功ケースのテストのため、テストが実行される OS 用の正規表現を作る
+        let os_regex = std::env::consts::OS;
+        let steps = vec![gen_teststep_with_os_regex("echo", Some("Score = 1234"), Some(os_regex))];
+        let runner = SingleCaseRunner::new(steps, get_regex());
+        let result = runner.run(TEST_CASE);
+        assert_eq!(result.score(), &Ok(NonZeroU64::new(1234).unwrap()));
+    }
+    #[test]
+    fn run_test_os_specific_fail() {
+        // 失敗ケースのテストのため、テストが実行される OS 以外の正規表現を作る
+        let os_regex = if std::env::consts::OS == "linux" { "macos" } else { "linux" };
+        let steps = vec![gen_teststep_with_os_regex("echo", Some("Score = 1234"), Some(os_regex))];
+        let runner = SingleCaseRunner::new(steps, get_regex());
+        let result = runner.run(TEST_CASE);
+        assert!(result.score.is_err());
+    }
+    #[test]
+    fn run_test_os_regex_invalid() {
+        let invalid_os_regex = "(";
+        let steps = vec![gen_teststep_with_os_regex("echo", Some("Score = 1234"), Some(invalid_os_regex))];
+        let runner = SingleCaseRunner::new(steps, get_regex());
+        let result = runner.run(TEST_CASE);
+        assert!(result.score.is_err());
+    }
+
     fn gen_teststep(program: &str, arg: Option<&str>) -> TestStep {
+        gen_teststep_with_os_regex(program, arg,None)
+    }
+
+    fn gen_teststep_with_os_regex(program: &str, arg: Option<&str>, os_regex: Option<&str>) -> TestStep {
         let args = arg.iter().map(|s| s.to_string()).collect();
-        TestStep::new(program.to_string(), args, None, None, None, None, true)
+        TestStep::new(program.to_string(), args, None, None, None, None, true, os_regex.map(|s| s.to_string()))
     }
 
     fn get_regex() -> Regex {

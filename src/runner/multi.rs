@@ -157,6 +157,7 @@ mod test {
             None,
             None,
             true,
+            None,
         )];
         let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.with(|r| r.clone()));
         let test_cases = vec![
