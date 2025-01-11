@@ -2,6 +2,7 @@ import json
 import math
 import os
 import subprocess
+from typing import Any
 
 import optuna
 
@@ -18,8 +19,8 @@ def generate_params(trial: optuna.trial.Trial) -> dict[str, str]:
 
 
 # TODO: Customize the score extraction code here
-def extract_score(result: dict[str, str]) -> float:
-    absolute_score = float(result["score"])  # noqa: F841
+def extract_score(result: dict[str, Any]) -> float:
+    absolute_score = result["score"]  # noqa: F841
     log10_score = math.log10(absolute_score) if absolute_score > 0.0 else 0.0  # noqa: F841
     relative_score = result["relative_score"]  # noqa: F841
 
