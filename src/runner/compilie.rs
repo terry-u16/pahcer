@@ -8,20 +8,6 @@ pub(crate) struct CompileStep {
     current_dir: Option<String>,
 }
 
-impl CompileStep {
-    pub(crate) const fn new(
-        program: String,
-        args: Vec<String>,
-        current_dir: Option<String>,
-    ) -> Self {
-        Self {
-            program,
-            args,
-            current_dir,
-        }
-    }
-}
-
 pub(super) fn compile(steps: &[CompileStep]) -> Result<()> {
     for step in steps {
         let mut cmd = std::process::Command::new(&step.program);
@@ -50,6 +36,20 @@ pub(super) fn compile(steps: &[CompileStep]) -> Result<()> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    impl CompileStep {
+        pub(crate) const fn new(
+            program: String,
+            args: Vec<String>,
+            current_dir: Option<String>,
+        ) -> Self {
+            Self {
+                program,
+                args,
+                current_dir,
+            }
+        }
+    }
 
     #[test]
     fn test_compile_success() {

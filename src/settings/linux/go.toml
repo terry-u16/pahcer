@@ -1,0 +1,35 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "go"
+args = ["build", "-o", "a.out", "main.go"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the user's program
+[[test.test_steps]]
+program = "./a.out"
+args = []
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true
+
+# Run the visualizer to calculate the score
+[[test.test_steps]]
+program = "cargo"
+args = [
+    "run",
+    "--bin",
+    "vis",
+    "--release",
+    "./in/{SEED04}.txt",
+    "./out/{SEED04}.txt",
+]
+current_dir = "./tools"
+measure_time = false

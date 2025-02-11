@@ -1,0 +1,22 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "go"
+args = ["build", "-o", "a.out", "main.go"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the tester with the user's program
+[[test.test_steps]]
+program = "cargo"
+args = ["run", "--bin", "tester", "--release", "../a.out"]
+current_dir = "./tools"
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true

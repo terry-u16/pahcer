@@ -1,0 +1,32 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release"]
+
+# Remove the old binary
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./{PROBLEM_NAME}"]
+
+# Move the compiled binary to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./target/release/{PROBLEM_NAME}", "./{PROBLEM_NAME}"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the tester with the user's program
+[[test.test_steps]]
+program = "cargo"
+args = ["run", "--bin", "tester", "--release", "../{PROBLEM_NAME}"]
+current_dir = "./tools"
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true

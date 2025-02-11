@@ -1,0 +1,65 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile user's program
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release"]
+
+# Remove the old binary
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./{PROBLEM_NAME}"]
+
+# Move the compiled binary to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./target/release/{PROBLEM_NAME}", "./{PROBLEM_NAME}"]
+
+# On macOS, there’s a possibility of SIGKILL or other issues occurring, 
+# so it’s better to build the visualizer in advance
+# rather than running it with cargo run every time.
+
+# Compile the visuzlizer
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "vis"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./vis"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/vis", "./vis"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the user's program
+[[test.test_steps]]
+program = "./{PROBLEM_NAME}"
+args = []
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true
+
+# Run the visualizer to calculate the score
+[[test.test_steps]]
+program = "cargo"
+args = [
+    "run",
+    "--bin",
+    "vis",
+    "--release",
+    "./in/{SEED04}.txt",
+    "./out/{SEED04}.txt",
+]
+current_dir = "./tools"
+measure_time = false

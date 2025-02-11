@@ -4,6 +4,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::OsStr,
+    fmt::Display,
     num::NonZeroU64,
     path::Path,
     time::{Duration, Instant},
@@ -18,28 +19,6 @@ pub(crate) struct TestStep {
     stdout: Option<String>,
     stderr: Option<String>,
     measure_time: bool,
-}
-
-impl TestStep {
-    pub(crate) const fn new(
-        program: String,
-        args: Vec<String>,
-        current_dir: Option<String>,
-        stdin: Option<String>,
-        stdout: Option<String>,
-        stderr: Option<String>,
-        measure_time: bool,
-    ) -> Self {
-        Self {
-            program,
-            args,
-            current_dir,
-            stdin,
-            stdout,
-            stderr,
-            measure_time,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -146,6 +125,15 @@ pub(crate) enum Objective {
     Max,
     /// Minimize the score
     Min,
+}
+
+impl Display for Objective {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Objective::Max => write!(f, "Max"),
+            Objective::Min => write!(f, "Min"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -297,6 +285,28 @@ mod test {
 
     const TEST_CASE: TestCase = TestCase::new(42, None, Objective::Max);
     thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
+
+    impl TestStep {
+        pub(crate) const fn new(
+            program: String,
+            args: Vec<String>,
+            current_dir: Option<String>,
+            stdin: Option<String>,
+            stdout: Option<String>,
+            stderr: Option<String>,
+            measure_time: bool,
+        ) -> Self {
+            Self {
+                program,
+                args,
+                current_dir,
+                stdin,
+                stdout,
+                stderr,
+                measure_time,
+            }
+        }
+    }
 
     #[test]
     fn test_calc_relative_score() {

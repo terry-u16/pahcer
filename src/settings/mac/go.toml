@@ -1,0 +1,55 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "go"
+args = ["build", "-o", "a.out", "main.go"]
+
+# On macOS, there’s a possibility of SIGKILL or other issues occurring, 
+# so it’s better to build the visualizer in advance
+# rather than running it with cargo run every time.
+
+# Compile the visuzlizer
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "vis"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./vis"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/vis", "./vis"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the user's program
+[[test.test_steps]]
+program = "./a.out"
+args = []
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true
+
+# Run the visualizer to calculate the score
+[[test.test_steps]]
+program = "cargo"
+args = [
+    "run",
+    "--bin",
+    "vis",
+    "--release",
+    "./in/{SEED04}.txt",
+    "./out/{SEED04}.txt",
+]
+current_dir = "./tools"
+measure_time = false
