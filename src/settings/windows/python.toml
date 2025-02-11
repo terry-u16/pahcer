@@ -11,7 +11,7 @@ compile_steps = []
 
 # Run the user's program
 [[test.test_steps]]
-program = "python3"
+program = "py"
 args = ["./main.py"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"

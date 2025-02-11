@@ -12,7 +12,7 @@ compile_steps = []
 # Run the tester with the user's program
 [[test.test_steps]]
 program = "cargo"
-args = ["run", "--bin", "tester", "--release", "python3", "../main.py"]
+args = ["run", "--bin", "tester", "--release", "py", "../main.py"]
 current_dir = "./tools"
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"

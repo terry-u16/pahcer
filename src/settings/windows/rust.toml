@@ -7,15 +7,13 @@
 program = "cargo"
 args = ["build", "--release"]
 
-# Remove the old binary
+# Move the compiled binary to the current directory (override the old binary)
 [[test.compile_steps]]
-program = "rm"
-args = ["-f", "./{PROBLEM_NAME}"]
-
-# Move the compiled binary to the current directory
-[[test.compile_steps]]
-program = "mv"
-args = ["./target/release/{PROBLEM_NAME}", "./{PROBLEM_NAME}"]
+program = "powershell.exe"
+args = [
+    "-Command",
+    "Move-Item ./target/release/{PROBLEM_NAME}.exe ./{PROBLEM_NAME}.exe -Force",
+]
 
 # ==============================
 #           TEST STEPS
@@ -23,7 +21,7 @@ args = ["./target/release/{PROBLEM_NAME}", "./{PROBLEM_NAME}"]
 
 # Run the user's program
 [[test.test_steps]]
-program = "./{PROBLEM_NAME}"
+program = "./{PROBLEM_NAME}.exe"
 args = []
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
