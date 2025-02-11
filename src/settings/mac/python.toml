@@ -28,7 +28,7 @@ args = ["./tools/target/release/vis", "./vis"]
 
 # Run the user's program
 [[test.test_steps]]
-program = "python"
+program = "python3"
 args = ["./main.py"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
