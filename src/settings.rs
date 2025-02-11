@@ -76,7 +76,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
     )?);
 
     let mut settings = include_str!("./settings/template.toml").to_string();
-    settings.push_str("\n");
+    settings.push('\n');
 
     let run_steps = get_run_step_settings(args);
     settings += run_steps;
