@@ -1,3 +1,5 @@
+use crate::util::format_float_with_commas;
+
 use super::{
     multi::{self, TestStats},
     Settings,
@@ -11,7 +13,7 @@ use std::{
     ffi::OsStr,
     fs::{File, OpenOptions},
     io::{BufReader, BufWriter, Write},
-    num::NonZeroU64,
+    num::{NonZeroU64, NonZeroUsize},
     path::{Path, PathBuf},
 };
 
@@ -96,11 +98,11 @@ pub(super) fn save_summary_log(
 fn save_summary_header(writer: &mut impl Write) -> Result<()> {
     writeln!(
         writer,
-        "Time                      | Cases  | Total Score       | Average Score | Total log10 | Average log10 | Comment"
+        "Time                      | Cases | Total Score      | Avg. Score       | Total log10  | Avg. log10  | Comment"
     )?;
     writeln!(
         writer,
-        "--------------------------|-------:|------------------:|--------------:|------------:|--------------:|----------------------"
+        "--------------------------|------:|-----------------:|-----------------:|-------------:|------------:|----------------------"
     )?;
 
     Ok(())
@@ -111,20 +113,26 @@ fn save_summary_log_inner(
     stats: &multi::TestStats,
     comment: &str,
 ) -> Result<()> {
+    let nonzero2 = NonZeroUsize::new(2).unwrap();
+    let nonzero5 = NonZeroUsize::new(5).unwrap();
+
     let start_time = stats
         .start_time
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     let case_count = stats.results.len().to_formatted_string(&Locale::en);
     let score = stats.score_sum.to_formatted_string(&Locale::en);
-    let average_score = ((stats.score_sum as f64 / stats.results.len() as f64).round() as u64)
-        .to_formatted_string(&Locale::en);
+    let average_score = format_float_with_commas(
+        stats.score_sum as f64 / stats.results.len() as f64,
+        nonzero2,
+    );
 
-    let score_log10 = stats.score_sum_log10;
-    let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
+    let score_log10 = format_float_with_commas(stats.score_sum_log10, nonzero5);
+    let average_score_log10 =
+        format_float_with_commas(stats.score_sum_log10 / stats.results.len() as f64, nonzero5);
 
     writeln!(
         writer,
-        "{} | {:>6} | {:>17} | {:>13} | {:>11.3} | {:>13.3} | {}",
+        "{} | {:>5} | {:>16} | {:>16} | {:>12} | {:>11} | {}",
         start_time, case_count, score, average_score, score_log10, average_score_log10, comment
     )?;
 
@@ -283,9 +291,9 @@ mod test {
         save_summary_log_inner(&mut buf, &stats, "hoge")?;
 
         let expected = format!(
-"Time                      | Cases  | Total Score       | Average Score | Total log10 | Average log10 | Comment
---------------------------|-------:|------------------:|--------------:|------------:|--------------:|----------------------
-{} |      2 |            11,000 |         5,500 |       7.000 |         3.500 | hoge
+"Time                      | Cases | Total Score      | Avg. Score       | Total log10  | Avg. log10  | Comment
+--------------------------|------:|-----------------:|-----------------:|-------------:|------------:|----------------------
+{} |     2 |           11,000 |         5,500.00 |      7.00000 |     3.50000 | hoge
 ", start_time.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
 
         let actual = String::from_utf8(buf).unwrap();
