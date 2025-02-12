@@ -1,0 +1,20 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# You don't need to compile anything for Python
+compile_steps = []
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the tester with the user's program
+[[test.test_steps]]
+program = "cargo"
+args = ["run", "--bin", "tester", "--release", "py", "../main.py"]
+current_dir = "./tools"
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true

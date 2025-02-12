@@ -48,25 +48,9 @@ pub(crate) struct Settings {
     pub(crate) test: Test,
 }
 
-impl Settings {
-    pub(crate) fn new(general: General, problem: Problem, test: Test) -> Self {
-        Self {
-            general,
-            problem,
-            test,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct General {
     pub(crate) version: String,
-}
-
-impl General {
-    pub(crate) fn new(version: String) -> Self {
-        Self { version }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,16 +58,6 @@ pub(crate) struct Problem {
     pub(crate) problem_name: String,
     pub(crate) objective: Objective,
     pub(crate) score_regex: String,
-}
-
-impl Problem {
-    pub(crate) fn new(problem_name: String, objective: Objective, score_regex: String) -> Self {
-        Self {
-            problem_name,
-            objective,
-            score_regex,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,114 +70,67 @@ pub(crate) struct Test {
     pub(crate) test_steps: Vec<TestStep>,
 }
 
-impl Test {
-    pub(crate) fn new(
-        start_seed: u64,
-        end_seed: u64,
-        threads: usize,
-        out_dir: String,
-        compile_steps: Vec<CompileStep>,
-        test_steps: Vec<TestStep>,
-    ) -> Self {
-        Self {
-            start_seed,
-            end_seed,
-            threads,
-            out_dir,
-            compile_steps,
-            test_steps,
-        }
-    }
-}
-
 pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
     let mut writer = BufWriter::new(std::fs::File::create_new(SETTING_FILE_PATH).context(
         "Failed to create the setting file. Ensure that ./pahcer_config.toml does not exist.",
     )?);
 
-    let version = env!("CARGO_PKG_VERSION").to_string();
-    let general = General::new(version);
+    let mut settings = include_str!("./settings/template.toml").to_string();
+    settings.push('\n');
 
-    let lang: Box<dyn Language> = match args.langage {
-        Lang::Rust => Box::new(Rust::new(args.problem_name.clone())),
-        Lang::Cpp => Box::new(Cpp),
-        Lang::Python => Box::new(Python),
-        Lang::Go => Box::new(Go),
-    };
-
-    let problem_name = args.problem_name.clone();
-    let problem = Problem::new(
-        problem_name,
-        args.objective,
-        r"(?m)^\s*Score\s*=\s*(?P<score>\d+)\s*$".to_string(),
-    );
-
-    let compile_steps = lang.compile_command();
-    let test_steps = gen_run_steps(lang, args.is_interactive);
+    let run_steps = get_run_step_settings(args);
+    settings += run_steps;
+    settings = settings.replace("{VERSION}", env!("CARGO_PKG_VERSION"));
+    settings = settings.replace("{PROBLEM_NAME}", &args.problem_name);
+    settings = settings.replace("{OBJECTIVE}", &format!("{}", args.objective));
 
     let out_dir = "./pahcer";
-    let test = Test::new(0, 100, 0, out_dir.to_string(), compile_steps, test_steps);
-
-    let setting = Settings::new(general, problem, test);
-
-    let setting_str = toml::to_string_pretty(&setting)?;
-    writeln!(writer, "{}", setting_str)?;
+    writeln!(writer, "{}", settings)?;
 
     gen_gitignore(out_dir)?;
 
     Ok(())
 }
 
-fn gen_run_steps(lang: Box<dyn Language>, is_interactive: bool) -> Vec<TestStep> {
-    let (test_command, test_args) = lang.test_command(is_interactive);
+#[cfg(target_os = "linux")]
+fn get_run_step_settings(args: &InitArgs) -> &str {
+    match (args.langage, args.is_interactive) {
+        (Lang::Rust, true) => include_str!("./settings/linux/rust_interactive.toml"),
+        (Lang::Rust, false) => include_str!("./settings/linux/rust.toml"),
+        (Lang::Cpp, true) => include_str!("./settings/linux/cpp_interactive.toml"),
+        (Lang::Cpp, false) => include_str!("./settings/linux/cpp.toml"),
+        (Lang::Python, true) => include_str!("./settings/linux/python_interactive.toml"),
+        (Lang::Python, false) => include_str!("./settings/linux/python.toml"),
+        (Lang::Go, true) => include_str!("./settings/linux/go_interactive.toml"),
+        (Lang::Go, false) => include_str!("./settings/linux/go.toml"),
+    }
+}
 
-    if is_interactive {
-        let mut args = vec![
-            "run".to_string(),
-            "--bin".to_string(),
-            "tester".to_string(),
-            "--release".to_string(),
-        ];
-        args.push(test_command);
-        args.extend(test_args);
+#[cfg(target_os = "macos")]
+fn get_run_step_settings(args: &InitArgs) -> &str {
+    match (args.langage, args.is_interactive) {
+        (Lang::Rust, true) => include_str!("./settings/macos/rust_interactive.toml"),
+        (Lang::Rust, false) => include_str!("./settings/macos/rust.toml"),
+        (Lang::Cpp, true) => include_str!("./settings/macos/cpp_interactive.toml"),
+        (Lang::Cpp, false) => include_str!("./settings/macos/cpp.toml"),
+        (Lang::Python, true) => include_str!("./settings/macos/python_interactive.toml"),
+        (Lang::Python, false) => include_str!("./settings/macos/python.toml"),
+        (Lang::Go, true) => include_str!("./settings/macos/go_interactive.toml"),
+        (Lang::Go, false) => include_str!("./settings/macos/go.toml"),
+    }
+}
 
-        vec![TestStep::new(
-            "cargo".to_string(),
-            args,
-            Some("./tools".to_string()),
-            Some("./tools/in/{SEED04}.txt".to_string()),
-            Some("./tools/out/{SEED04}.txt".to_string()),
-            Some("./tools/err/{SEED04}.txt".to_string()),
-            true,
-        )]
-    } else {
-        vec![
-            TestStep::new(
-                test_command,
-                test_args,
-                None,
-                Some("./tools/in/{SEED04}.txt".to_string()),
-                Some("./tools/out/{SEED04}.txt".to_string()),
-                Some("./tools/err/{SEED04}.txt".to_string()),
-                true,
-            ),
-            TestStep::new(
-                "cargo".to_string(),
-                vec![
-                    "run".to_string(),
-                    "--bin".to_string(),
-                    "vis".to_string(),
-                    "--release".to_string(),
-                    "./in/{SEED04}.txt".to_string(),
-                    "./out/{SEED04}.txt".to_string(),
-                ],
-                Some("./tools".to_string()),
-                None,
-                None,
-                None,
-                false,
-            ),
-        ]
+#[cfg(target_os = "windows")]
+fn get_run_step_settings(args: &InitArgs) -> &str {
+    match (args.langage, args.is_interactive) {
+        (Lang::Rust, true) => include_str!("./settings/windows/rust_interactive.toml"),
+        (Lang::Rust, false) => include_str!("./settings/windows/rust.toml"),
+        (Lang::Cpp, true) => include_str!("./settings/windows/cpp_interactive.toml"),
+        (Lang::Cpp, false) => include_str!("./settings/windows/cpp.toml"),
+        (Lang::Python, true) => include_str!("./settings/windows/python_interactive.toml"),
+        (Lang::Python, false) => include_str!("./settings/windows/python.toml"),
+        (Lang::Go, true) => include_str!("./settings/windows/go_interactive.toml"),
+        (Lang::Go, false) => include_str!("./settings/windows/go.toml"),
     }
 }
 
@@ -221,117 +148,4 @@ fn gen_gitignore(dir: impl AsRef<OsStr>) -> Result<()> {
     writeln!(writer, "*").context("Failed to write to .gitignore")?;
 
     Ok(())
-}
-
-trait Language {
-    fn compile_command(&self) -> Vec<CompileStep>;
-    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>);
-}
-
-struct Rust {
-    problem_name: String,
-}
-
-impl Rust {
-    fn new(problem_name: String) -> Self {
-        Self { problem_name }
-    }
-}
-
-impl Language for Rust {
-    fn compile_command(&self) -> Vec<CompileStep> {
-        vec![
-            CompileStep::new(
-                "cargo".to_string(),
-                vec!["build".to_string(), "--release".to_string()],
-                None,
-            ),
-            CompileStep::new(
-                "rm".to_string(),
-                vec!["-f".to_string(), format!("./{}", self.problem_name)],
-                None,
-            ),
-            CompileStep::new(
-                "mv".to_string(),
-                vec![
-                    format!("./target/release/{}", self.problem_name),
-                    format!("./{}", self.problem_name),
-                ],
-                None,
-            ),
-        ]
-    }
-
-    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
-        if is_interactive {
-            (format!("../{}", self.problem_name), vec![])
-        } else {
-            (format!("./{}", self.problem_name), vec![])
-        }
-    }
-}
-
-struct Cpp;
-
-impl Language for Cpp {
-    fn compile_command(&self) -> Vec<CompileStep> {
-        vec![CompileStep::new(
-            "g++".to_string(),
-            vec![
-                "-std=c++20".to_string(),
-                "-O2".to_string(),
-                "main.cpp".to_string(),
-            ],
-            None,
-        )]
-    }
-
-    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
-        if is_interactive {
-            ("../a.out".to_string(), vec![])
-        } else {
-            ("./a.out".to_string(), vec![])
-        }
-    }
-}
-
-struct Python;
-
-impl Language for Python {
-    fn compile_command(&self) -> Vec<CompileStep> {
-        vec![]
-    }
-
-    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
-        if is_interactive {
-            ("python".to_string(), vec!["../main.py".to_string()])
-        } else {
-            ("python".to_string(), vec!["./main.py".to_string()])
-        }
-    }
-}
-
-struct Go;
-
-impl Language for Go {
-    fn compile_command(&self) -> Vec<CompileStep> {
-        vec![CompileStep::new(
-            "go".to_string(),
-            vec![
-                "build".to_string(),
-                "-o".to_string(),
-                "a.out".to_string(),
-                "main.go".to_string(),
-            ],
-            None,
-        )]
-    }
-
-    fn test_command(&self, is_interactive: bool) -> (String, Vec<String>) {
-        if is_interactive {
-            ("../a.out".to_string(), vec![])
-        } else {
-            ("./a.out".to_string(), vec![])
-        }
-    }
 }

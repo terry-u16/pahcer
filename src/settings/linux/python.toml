@@ -1,0 +1,33 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# You don't need to compile anything for Python
+compile_steps = []
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the user's program
+[[test.test_steps]]
+program = "python3"
+args = ["./main.py"]
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true
+
+# Run the visualizer to calculate the score
+[[test.test_steps]]
+program = "cargo"
+args = [
+    "run",
+    "--bin",
+    "vis",
+    "--release",
+    "./in/{SEED04}.txt",
+    "./out/{SEED04}.txt",
+]
+current_dir = "./tools"
+measure_time = false

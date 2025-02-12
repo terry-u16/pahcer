@@ -1,0 +1,41 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "g++"
+args = ["-std=c++20", "-O2", "main.cpp"]
+
+# On macOS, there’s a possibility of SIGKILL or other issues occurring, 
+# so it’s better to build the tester in advance
+# rather than running it with cargo run every time.
+
+# Compile the tester
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "tester"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./tester"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/tester", "./tester"]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the tester with the user's program
+[[test.test_steps]]
+program = "./tester"
+args = ["./a.out"]
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true

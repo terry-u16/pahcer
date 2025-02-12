@@ -1,0 +1,30 @@
+# ==============================
+#         COMPILE STEPS
+# ==============================
+
+# Compile the user's program
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release"]
+
+# Move the compiled binary to the current directory (override the old binary)
+[[test.compile_steps]]
+program = "powershell.exe"
+args = [
+    "-Command",
+    "Move-Item ./target/release/{PROBLEM_NAME}.exe ./{PROBLEM_NAME}.exe -Force",
+]
+
+# ==============================
+#           TEST STEPS
+# ==============================
+
+# Run the tester with the user's program
+[[test.test_steps]]
+program = "cargo"
+args = ["run", "--bin", "tester", "--release", "../{PROBLEM_NAME}.exe"]
+current_dir = "./tools"
+stdin = "./tools/in/{SEED04}.txt"
+stdout = "./tools/out/{SEED04}.txt"
+stderr = "./tools/err/{SEED04}.txt"
+measure_time = true
