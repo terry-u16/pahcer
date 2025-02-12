@@ -43,5 +43,5 @@ measure_time = true
 # Run the visualizer to calculate the score
 [[test.test_steps]]
 program = "./vis"
-args = ["./in/{SEED04}.txt", "./out/{SEED04}.txt"]
+args = ["./tools/in/{SEED04}.txt", "./tools/out/{SEED04}.txt"]
 measure_time = false

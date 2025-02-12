@@ -43,9 +43,8 @@ args = ["./tools/target/release/tester", "./tester"]
 
 # Run the tester with the user's program
 [[test.test_steps]]
-program = "cargo"
-args = ["run", "--bin", "tester", "--release", "../{PROBLEM_NAME}"]
-current_dir = "./tools"
+program = "./tester"
+args = ["./{PROBLEM_NAME}"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
 stderr = "./tools/err/{SEED04}.txt"
