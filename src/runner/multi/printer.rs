@@ -1,9 +1,11 @@
+use crate::util::format_float_with_commas;
+
 use super::{TestResult, TestStats};
 use anyhow::Result;
 use colored::Colorize as _;
 use num_format::{Locale, ToFormattedString as _};
 use serde::Serialize;
-use std::io::Write;
+use std::{io::Write, num::NonZero};
 
 #[cfg_attr(test, mockall::automock)]
 pub(super) trait Printer {
@@ -33,11 +35,14 @@ impl Printer for ConsolePrinter {
             self.print_header(writer)?;
         }
 
-        let digit = self.testcase_count.to_string().len();
+        let digit = self.testcase_count.to_string().len().max(3);
 
+        let nonzero2 = NonZero::new(2).unwrap();
         let score = score.to_formatted_string(&Locale::en);
-        let average_score = ((self.score_sum as f64 / self.completed_count as f64).round() as u64)
-            .to_formatted_string(&Locale::en);
+        let average_score = format_float_with_commas(
+            self.score_sum as f64 / self.completed_count as f64,
+            nonzero2,
+        );
         let execution_time = result
             .execution_time()
             .as_millis()
@@ -45,9 +50,10 @@ impl Printer for ConsolePrinter {
         let average_relative_score = self.relative_score_sum / self.completed_count as f64;
         self.score_width = self.score_width.max(score.len());
         let score_width = self.score_width;
+        let average_score_width = score_width + 3;
 
         let record = format!(
-            "| case {:digit$} / {:digit$} | {:04} | {:>score_width$} | {:8.3} | {:>score_width$} | {:8.3} | {:>6} ms |",
+            "| {:digit$} / {:digit$} | {:04} | {:>score_width$} | {:8.3} | {:>average_score_width$} | {:8.3} | {:>6} ms |",
             self.completed_count,
             self.testcase_count,
             result.test_case().seed(),
@@ -70,8 +76,11 @@ impl Printer for ConsolePrinter {
     }
 
     fn print_summary(&mut self, writer: &mut dyn Write, stats: &TestStats) -> Result<()> {
-        let average_score = ((stats.score_sum as f64 / stats.results.len() as f64).round() as u64)
-            .to_formatted_string(&Locale::en);
+        let nonzero2 = NonZero::new(2).unwrap();
+        let average_score = format_float_with_commas(
+            stats.score_sum as f64 / stats.results.len() as f64,
+            nonzero2,
+        );
         let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
         let average_relative_score = stats.relative_score_sum / stats.results.len() as f64;
         let ac_count =
@@ -80,7 +89,7 @@ impl Printer for ConsolePrinter {
         writeln!(writer, "Average Score          : {}", average_score)?;
         writeln!(
             writer,
-            "Average Score (log10)  : {:.3}",
+            "Average Score (log10)  : {:.5}",
             average_score_log10
         )?;
         writeln!(
@@ -134,27 +143,30 @@ impl ConsolePrinter {
             .score_width
             .max(self.score_sum.to_formatted_string(&Locale::en).len() + 3);
 
-        let test_width = self.testcase_count.to_string().len() * 2 + 8;
+        let test_width = (self.testcase_count.to_string().len() * 2 + 3).max(9);
         let score_width1 = self.score_width + 11;
         let score_width2 = self.score_width;
+        let average_score_width1 = score_width1 + 3;
+        let average_score_width2 = score_width2 + 3;
 
         writeln!(
             writer,
-            "| {:^test_width$} | {:^4} | {:^score_width1$} | {:^score_width1$} | {:^9} |",
+            "| {:^test_width$} | {:^4} | {:^score_width1$} | {:^average_score_width1$} | {:^9} |",
             "Progress", "Seed", "Case Score", "Average Score", "Exec."
         )?;
 
         writeln!(
             writer,
-            "| {:^test_width$} | {:^4} | {:^score_width2$} | {:^8} | {:^score_width2$} | {:^8} | {:^9} |",
+            "| {:^test_width$} | {:^4} | {:^score_width2$} | {:^8} | {:^average_score_width2$} | {:^8} | {:^9} |",
             "", "", "Score", "Relative", "Score", "Relative", "Time"
         )?;
 
         let test_width = test_width + 2;
         let score_width2 = score_width2 + 2;
+        let average_score_width2 = average_score_width2 + 2;
         writeln!(
             writer,
-            "|{:-^test_width$}|{:-^6}|{:-^score_width2$}|{:-^10}|{:-^score_width2$}|{:-^10}|{:-^11}|",
+            "|{:-^test_width$}|{:-^6}|{:-^score_width2$}|{:-^10}|{:-^average_score_width2$}|{:-^10}|{:-^11}|",
             "", "", "", "", "", "", ""
         )?;
 
@@ -235,15 +247,15 @@ mod test {
             .unwrap();
 
         let expected =
-            "|  Progress  | Seed |     Case Score      |    Average Score    |   Exec.   |
-|            |      |  Score   | Relative |  Score   | Relative |   Time    |
-|------------|------|----------|----------|----------|----------|-----------|
-| case 1 / 3 | 0000 |    1,000 | 1000.000 |    1,000 | 1000.000 |  1,234 ms |
-| case 2 / 3 | 0001 |      500 |  500.000 |      750 |  750.000 | 12,345 ms |
-\u{1b}[33m| case 3 / 3 | 0002 |        0 |    0.000 |      500 |  500.000 |      1 ms |\u{1b}[0m
+            "| Progress  | Seed |     Case Score      |     Average Score      |   Exec.   |
+|           |      |  Score   | Relative |    Score    | Relative |   Time    |
+|-----------|------|----------|----------|-------------|----------|-----------|
+|   1 /   3 | 0000 |    1,000 | 1000.000 |    1,000.00 | 1000.000 |  1,234 ms |
+|   2 /   3 | 0001 |      500 |  500.000 |      750.00 |  750.000 | 12,345 ms |
+\u{1b}[33m|   3 /   3 | 0002 |        0 |    0.000 |      500.00 |  500.000 |      1 ms |\u{1b}[0m
 \u{1b}[33merror\u{1b}[0m
-Average Score          : 500
-Average Score (log10)  : 1.900
+Average Score          : 500.00
+Average Score (log10)  : 1.89966
 Average Relative Score : 500.000
 Accepted               : \u{1b}[1;33m2 / 3\u{1b}[0m
 Max Execution Time     : 12,345 ms
