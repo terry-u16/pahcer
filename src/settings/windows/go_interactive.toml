@@ -5,7 +5,21 @@
 # Compile the user's program
 [[test.compile_steps]]
 program = "go"
-args = ["build", "-o", "a.out", "main.go"]
+args = ["build", "-o", "a.exe", "main.go"]
+
+# Compile the tester
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "tester"]
+current_dir = "./tools"
+
+# Move the compiled tester to the current directory (override the old binary)
+[[test.compile_steps]]
+program = "powershell.exe"
+args = [
+    "-Command",
+    "Move-Item ./tools/target/release/tester.exe ./tester.exe -Force",
+]
 
 # ==============================
 #           TEST STEPS
@@ -13,9 +27,8 @@ args = ["build", "-o", "a.out", "main.go"]
 
 # Run the tester with the user's program
 [[test.test_steps]]
-program = "cargo"
-args = ["run", "--bin", "tester", "--release", "../a.out"]
-current_dir = "./tools"
+program = "./tester.exe"
+args = ["./a.exe"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
 stderr = "./tools/err/{SEED04}.txt"

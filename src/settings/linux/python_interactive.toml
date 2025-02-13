@@ -2,8 +2,21 @@
 #         COMPILE STEPS
 # ==============================
 
-# You don't need to compile anything for Python
-compile_steps = []
+# Compile the tester
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "tester"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./tester"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/tester", "./tester"]
 
 # ==============================
 #           TEST STEPS
@@ -11,9 +24,8 @@ compile_steps = []
 
 # Run the tester with the user's program
 [[test.test_steps]]
-program = "cargo"
-args = ["run", "--bin", "tester", "--release", "python3", "../main.py"]
-current_dir = "./tools"
+program = "./tester"
+args = ["python3", "./main.py"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
 stderr = "./tools/err/{SEED04}.txt"

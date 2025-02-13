@@ -17,10 +17,6 @@ args = ["-f", "./{PROBLEM_NAME}"]
 program = "mv"
 args = ["./target/release/{PROBLEM_NAME}", "./{PROBLEM_NAME}"]
 
-# On macOS, there’s a possibility of SIGKILL or other issues occurring, 
-# so it’s better to build the tester in advance
-# rather than running it with cargo run every time.
-
 # Compile the tester
 [[test.compile_steps]]
 program = "cargo"

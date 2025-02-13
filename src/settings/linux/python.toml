@@ -2,8 +2,21 @@
 #         COMPILE STEPS
 # ==============================
 
-# You don't need to compile anything for Python
-compile_steps = []
+# Compile the visuzlizer
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "vis"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./vis"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/vis", "./vis"]
 
 # ==============================
 #           TEST STEPS
@@ -20,14 +33,6 @@ measure_time = true
 
 # Run the visualizer to calculate the score
 [[test.test_steps]]
-program = "cargo"
-args = [
-    "run",
-    "--bin",
-    "vis",
-    "--release",
-    "./in/{SEED04}.txt",
-    "./out/{SEED04}.txt",
-]
-current_dir = "./tools"
+program = "./vis"
+args = ["./tools/in/{SEED04}.txt", "./tools/out/{SEED04}.txt"]
 measure_time = false
