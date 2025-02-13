@@ -69,7 +69,7 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         .collect::<Vec<_>>();
 
     if args.shuffle {
-        test_cases.shuffle(&mut rand::thread_rng());
+        test_cases.shuffle(&mut rand::rng());
     }
 
     let mut runner = if args.json {
