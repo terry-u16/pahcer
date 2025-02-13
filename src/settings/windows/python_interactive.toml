@@ -2,8 +2,19 @@
 #         COMPILE STEPS
 # ==============================
 
-# You don't need to compile anything for Python
-compile_steps = []
+# Compile the tester
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "tester"]
+current_dir = "./tools"
+
+# Move the compiled tester to the current directory (override the old binary)
+[[test.compile_steps]]
+program = "powershell.exe"
+args = [
+    "-Command",
+    "Move-Item ./tools/target/release/tester.exe ./tester.exe -Force",
+]
 
 # ==============================
 #           TEST STEPS

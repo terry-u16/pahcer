@@ -5,7 +5,7 @@
 # Compile the user's program
 [[test.compile_steps]]
 program = "go"
-args = ["build", "-o", "a.out", "main.go"]
+args = ["build", "-o", "a.exe", "main.go"]
 
 # ==============================
 #           TEST STEPS
@@ -13,7 +13,7 @@ args = ["build", "-o", "a.out", "main.go"]
 
 # Run the user's program
 [[test.test_steps]]
-program = "./a.out"
+program = "./a.exe"
 args = []
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
@@ -22,14 +22,6 @@ measure_time = true
 
 # Run the visualizer to calculate the score
 [[test.test_steps]]
-program = "cargo"
-args = [
-    "run",
-    "--bin",
-    "vis",
-    "--release",
-    "./in/{SEED04}.txt",
-    "./out/{SEED04}.txt",
-]
-current_dir = "./tools"
+program = "./vis.exe"
+args = ["./tools/in/{SEED04}.txt", "./tools/out/{SEED04}.txt"]
 measure_time = false

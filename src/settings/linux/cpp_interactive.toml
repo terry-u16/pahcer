@@ -7,15 +7,30 @@
 program = "g++"
 args = ["-std=c++20", "-O2", "main.cpp"]
 
+# Compile the tester
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "tester"]
+current_dir = "./tools"
+
+# Remove the old tester
+[[test.compile_steps]]
+program = "rm"
+args = ["-f", "./tester"]
+
+# Move the tester to the current directory
+[[test.compile_steps]]
+program = "mv"
+args = ["./tools/target/release/tester", "./tester"]
+
 # ==============================
 #           TEST STEPS
 # ==============================
 
 # Run the tester with the user's program
 [[test.test_steps]]
-program = "cargo"
-args = ["run", "--bin", "tester", "--release", "../a.out"]
-current_dir = "./tools"
+program = "./tester"
+args = ["./a.out"]
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
 stderr = "./tools/err/{SEED04}.txt"
