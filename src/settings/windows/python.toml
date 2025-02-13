@@ -2,8 +2,16 @@
 #         COMPILE STEPS
 # ==============================
 
-# You don't need to compile anything for Python
-compile_steps = []
+# Compile the visuzlizer
+[[test.compile_steps]]
+program = "cargo"
+args = ["build", "--release", "--bin", "vis"]
+current_dir = "./tools"
+
+# Move the compiled tester to the current directory (override the old binary)
+[[test.compile_steps]]
+program = "powershell.exe"
+args = ["-Command", "Move-Item ./tools/target/release/vis.exe ./vis.exe -Force"]
 
 # ==============================
 #           TEST STEPS
