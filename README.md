@@ -41,6 +41,17 @@ $ rustup update
 $ cargo install pahcer --locked
 ```
 
+## バージョン指定でのインストール
+
+最新バージョンがうまく動かないなどの理由によりバージョンを指定してインストールするには、以下のコマンドを実行してください。
+
+インストール可能なバージョンの一覧は[crates.io](https://crates.io/crates/pahcer/versions)をご参照ください。
+
+```sh
+# 例: cargo install pahcer --version 0.1.1
+$ cargo install pahcer --version <VERSION>
+```
+
 ## バージョンアップ
 
 `cargo-update` を使用する方法と素のCargoを使う方法があります。前者がオススメです。
@@ -193,7 +204,7 @@ $ pahcer run
 - `./pahcer/best_scores.json` : ローカルでのベストスコアが保存されたJSONファイルです。
 - `./pahcer/json/result_*.json` : 実行結果の詳細が記録されたJSONファイルです。
 
-デフォルトでは、 seed=0 から seed=99 までの100ケースが実行されます。カスタマイズしたい場合やうまく動かない場合は `./pahcer_config.toml` を編集してください。（非WSLのWindows環境だと設定を変える必要があるかもしれません。）
+デフォルトでは、 seed=0 から seed=99 までの100ケースが実行されます。カスタマイズしたい場合やうまく動かない場合は `./pahcer_config.toml` を編集してください。
 
 ### 4. Optunaとの連携によるパラメータ最適化（オプション）
 
