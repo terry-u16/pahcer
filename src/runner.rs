@@ -2,6 +2,7 @@ pub(crate) mod compilie;
 mod io;
 mod multi;
 pub(crate) mod single;
+mod git;
 
 use crate::settings::{Settings, SETTING_FILE_PATH};
 use anyhow::{ensure, Context, Result};
