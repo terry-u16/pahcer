@@ -24,9 +24,9 @@ pub(crate) struct RunArgs {
     /// Output the result in JSON format
     #[clap(short = 'j', long = "json")]
     json: bool,
-    /// Branch name to commit the current changes
-    #[clap(short = 'b', long = "branch", num_args = 0..=1, default_missing_value = "")]
-    branch: Option<String>,
+    /// Tag for the commit
+    #[clap(short = 't', long = "tag", num_args = 0..=1, default_missing_value = "")]
+    tag: Option<String>,
     /// Path to the setting file
     #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
@@ -51,17 +51,12 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         compile(&settings.test.compile_steps)?;
     }
 
-    let branch_name = match args.branch {
-        Some(branch) => {
-            let branch = if branch.is_empty() {
-                None
-            } else {
-                Some(branch)
-            };
-
-            let branch = git::commit(branch).context("Failed to commit the current changes.")?;
-            println!("Committed the current changes to the branch: {}", branch);
-            Some(branch)
+    let tag_name = match args.tag {
+        Some(tag) => {
+            let tag = if tag.is_empty() { None } else { Some(tag) };
+            let tag = git::commit(tag).context("Failed to tag the current changes.")?;
+            println!("Tagged: {}", tag);
+            Some(tag)
         }
         None => None,
     };
@@ -116,9 +111,9 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
 
     if !args.no_result_file {
         let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
-        io::save_summary_log(&summary_file_path, &stats, &args.comment, &branch_name)?;
+        io::save_summary_log(&summary_file_path, &stats, &args.comment, &tag_name)?;
         let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
-        io::save_json_log(&json_file_path, &stats, &args.comment, &branch_name)?;
+        io::save_json_log(&json_file_path, &stats, &args.comment, &tag_name)?;
     }
 
     Ok(())

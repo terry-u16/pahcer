@@ -79,9 +79,9 @@ pub(super) fn save_summary_log(
     path: impl AsRef<Path>,
     stats: &multi::TestStats,
     comment: &str,
-    branch_name: &Option<String>,
+    tag_name: &Option<String>,
 ) -> Result<()> {
-    let comment = match branch_name {
+    let comment = match tag_name {
         Some(branch_name) => format!("({}) {}", branch_name, comment),
         None => comment.to_string(),
     };
@@ -154,13 +154,13 @@ struct AllResultJson<'a> {
     total_relative_score: f64,
     max_execution_time: f64,
     comment: &'a str,
-    branch_name: &'a Option<String>,
+    tag_name: &'a Option<String>,
     wa_seeds: Vec<u64>,
     cases: Vec<CaseResultJson>,
 }
 
 impl<'a> AllResultJson<'a> {
-    fn new(stats: &TestStats, comment: &'a str, branch_name: &'a Option<String>) -> Self {
+    fn new(stats: &TestStats, comment: &'a str, tag_name: &'a Option<String>) -> Self {
         let cases = stats
             .results
             .iter()
@@ -206,7 +206,7 @@ impl<'a> AllResultJson<'a> {
             comment,
             wa_seeds,
             cases,
-            branch_name,
+            tag_name,
         }
     }
 }
@@ -247,12 +247,12 @@ pub(super) fn save_json_log(
     path: impl AsRef<Path>,
     stats: &TestStats,
     comment: &str,
-    branch_name: &Option<String>,
+    tag_naeme: &Option<String>,
 ) -> Result<()> {
     create_parent_dir(&path)?;
     let file = File::create(path)?;
     let writer = BufWriter::new(file);
-    let json = AllResultJson::new(stats, comment, branch_name);
+    let json = AllResultJson::new(stats, comment, tag_naeme);
     serde_json::to_writer_pretty(writer, &json)?;
 
     Ok(())
