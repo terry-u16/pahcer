@@ -79,7 +79,13 @@ pub(super) fn save_summary_log(
     path: impl AsRef<Path>,
     stats: &multi::TestStats,
     comment: &str,
+    branch_name: &Option<String>,
 ) -> Result<()> {
+    let comment = match branch_name {
+        Some(branch_name) => format!("({}) {}", branch_name, comment),
+        None => comment.to_string(),
+    };
+
     let mut writer = match OpenOptions::new().append(true).open(&path) {
         Ok(file) => BufWriter::new(file),
         Err(_) => {
@@ -90,7 +96,7 @@ pub(super) fn save_summary_log(
         }
     };
 
-    save_summary_log_inner(&mut writer, stats, comment)?;
+    save_summary_log_inner(&mut writer, stats, &comment)?;
 
     Ok(())
 }
@@ -148,12 +154,13 @@ struct AllResultJson<'a> {
     total_relative_score: f64,
     max_execution_time: f64,
     comment: &'a str,
+    branch_name: &'a Option<String>,
     wa_seeds: Vec<u64>,
     cases: Vec<CaseResultJson>,
 }
 
 impl<'a> AllResultJson<'a> {
-    fn new(stats: &TestStats, comment: &'a str) -> Self {
+    fn new(stats: &TestStats, comment: &'a str, branch_name: &'a Option<String>) -> Self {
         let cases = stats
             .results
             .iter()
@@ -199,6 +206,7 @@ impl<'a> AllResultJson<'a> {
             comment,
             wa_seeds,
             cases,
+            branch_name,
         }
     }
 }
@@ -239,11 +247,12 @@ pub(super) fn save_json_log(
     path: impl AsRef<Path>,
     stats: &TestStats,
     comment: &str,
+    branch_name: &Option<String>,
 ) -> Result<()> {
     create_parent_dir(&path)?;
     let file = File::create(path)?;
     let writer = BufWriter::new(file);
-    let json = AllResultJson::new(stats, comment);
+    let json = AllResultJson::new(stats, comment, branch_name);
     serde_json::to_writer_pretty(writer, &json)?;
 
     Ok(())

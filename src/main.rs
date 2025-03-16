@@ -1,6 +1,7 @@
 pub(crate) mod runner;
 pub(crate) mod settings;
 pub(crate) mod util;
+mod git;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

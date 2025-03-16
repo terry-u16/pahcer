@@ -2,9 +2,11 @@ pub(crate) mod compilie;
 mod io;
 mod multi;
 pub(crate) mod single;
-mod git;
 
-use crate::settings::{Settings, SETTING_FILE_PATH};
+use crate::{
+    git,
+    settings::{Settings, SETTING_FILE_PATH},
+};
 use anyhow::{ensure, Context, Result};
 use clap::Args;
 use compilie::compile;
@@ -22,6 +24,9 @@ pub(crate) struct RunArgs {
     /// Output the result in JSON format
     #[clap(short = 'j', long = "json")]
     json: bool,
+    /// Branch name to commit the current changes
+    #[clap(short = 'b', long = "branch", num_args = 0..=1, default_missing_value = "")]
+    branch: Option<String>,
     /// Path to the setting file
     #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
@@ -45,6 +50,21 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     if !args.no_compile {
         compile(&settings.test.compile_steps)?;
     }
+
+    let branch_name = match args.branch {
+        Some(branch) => {
+            let branch = if branch.is_empty() {
+                None
+            } else {
+                Some(branch)
+            };
+
+            let branch = git::commit(branch).context("Failed to commit the current changes.")?;
+            println!("Committed the current changes to the branch: {}", branch);
+            Some(branch)
+        }
+        None => None,
+    };
 
     let single_runner = single::SingleCaseRunner::new(
         settings.test.test_steps.clone(),
@@ -96,9 +116,9 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
 
     if !args.no_result_file {
         let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
-        io::save_summary_log(&summary_file_path, &stats, &args.comment)?;
+        io::save_summary_log(&summary_file_path, &stats, &args.comment, &branch_name)?;
         let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
-        io::save_json_log(&json_file_path, &stats, &args.comment)?;
+        io::save_json_log(&json_file_path, &stats, &args.comment, &branch_name)?;
     }
 
     Ok(())

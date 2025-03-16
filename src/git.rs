@@ -7,11 +7,10 @@ use std::process::{Command, Output};
 
 /// 現在の変更を一時的なブランチにコミットし、そのブランチ名を返す
 pub(super) fn commit(new_branch_name: Option<String>) -> Result<String> {
-    let current_branch_name = get_current_branch_name()?;
     let new_branch_name = generate_and_switch_to_new_branch(new_branch_name)?;
     stage_all()?;
     commit_all()?;
-    switch_branch(current_branch_name)?;
+    back_branch()?;
     restore_changes(&new_branch_name)?;
     Ok(new_branch_name)
 }
@@ -90,14 +89,18 @@ fn commit_all() -> Result<()> {
     Ok(())
 }
 
+/// 直前のブランチに移動する
+fn back_branch() -> Result<()> {
+    check_return_code(Command::new("git").args(&["switch", "-"]).output()?)
+}
+
 /// 指定されたブランチに移動する
 fn switch_branch(current_branch_name: String) -> Result<(), anyhow::Error> {
     check_return_code(
         Command::new("git")
             .args(&["switch", &current_branch_name])
             .output()?,
-    )?;
-    Ok(())
+    )
 }
 
 /// カレントブランチに変更を反映する
@@ -106,8 +109,7 @@ fn restore_changes(new_branch_name: &String) -> Result<(), anyhow::Error> {
         Command::new("git")
             .args(&["restore", "--source", new_branch_name, "--worktree", ":/"])
             .output()?,
-    )?;
-    Ok(())
+    )
 }
 
 /// ブランチ名のリストを取得する
