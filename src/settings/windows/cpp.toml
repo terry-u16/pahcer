@@ -13,7 +13,7 @@ args = ["-std=c++20", "-O2", "main.cpp"]
 
 # Run the user's program
 [[test.test_steps]]
-program = "./a.out"
+program = "./a.exe"
 args = []
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"

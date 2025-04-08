@@ -14,7 +14,7 @@ args = ["-std=c++20", "-O2", "main.cpp"]
 # Run the tester with the user's program
 [[test.test_steps]]
 program = "cargo"
-args = ["run", "--bin", "tester", "--release", "../a.out"]
+args = ["run", "--bin", "tester", "--release", "../a.exe"]
 current_dir = "./tools"
 stdin = "./tools/in/{SEED04}.txt"
 stdout = "./tools/out/{SEED04}.txt"
