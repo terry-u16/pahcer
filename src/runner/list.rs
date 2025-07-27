@@ -79,8 +79,8 @@ fn load_results(settings: &Settings, limit: Option<usize>) -> Result<Vec<AllResu
 
     // ファイル名でソート（新しい順）
     json_files.sort_by(|a, b| {
-        let name_a = a.file_name().unwrap();
-        let name_b = b.file_name().unwrap();
+        let name_a = a.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name_b = b.file_name().and_then(|n| n.to_str()).unwrap_or("");
         name_b.cmp(name_a)
     });
 
