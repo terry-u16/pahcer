@@ -7,7 +7,7 @@ use super::{
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Local};
 use num_format::{Locale, ToFormattedString as _};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
@@ -144,22 +144,22 @@ fn save_summary_log_inner(
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct AllResultJson<'a> {
-    start_time: DateTime<Local>,
-    case_count: usize,
-    total_score: u64,
-    total_score_log10: f64,
-    total_relative_score: f64,
-    max_execution_time: f64,
-    comment: &'a str,
-    tag_name: &'a Option<String>,
-    wa_seeds: Vec<u64>,
-    cases: Vec<CaseResultJson>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(super) struct AllResultJson {
+    pub(super) start_time: DateTime<Local>,
+    pub(super) case_count: usize,
+    pub(super) total_score: u64,
+    pub(super) total_score_log10: f64,
+    pub(super) total_relative_score: f64,
+    pub(super) max_execution_time: f64,
+    pub(super) comment: String,
+    pub(super) tag_name: Option<String>,
+    pub(super) wa_seeds: Vec<u64>,
+    pub(super) cases: Vec<CaseResultJson>,
 }
 
-impl<'a> AllResultJson<'a> {
-    fn new(stats: &TestStats, comment: &'a str, tag_name: &'a Option<String>) -> Self {
+impl AllResultJson {
+    fn new(stats: &TestStats, comment: &str, tag_name: &Option<String>) -> Self {
         let cases = stats
             .results
             .iter()
@@ -202,21 +202,21 @@ impl<'a> AllResultJson<'a> {
             total_score_log10: stats.score_sum_log10,
             total_relative_score: stats.relative_score_sum,
             max_execution_time,
-            comment,
+            comment: comment.to_string(),
             wa_seeds,
             cases,
-            tag_name,
+            tag_name: tag_name.clone(),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct CaseResultJson {
-    seed: u64,
-    score: u64,
-    relative_score: f64,
-    execution_time: f64,
-    error_message: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(super) struct CaseResultJson {
+    pub(super) seed: u64,
+    pub(super) score: u64,
+    pub(super) relative_score: f64,
+    pub(super) execution_time: f64,
+    pub(super) error_message: String,
 }
 
 impl CaseResultJson {
@@ -237,9 +237,13 @@ impl CaseResultJson {
     }
 }
 
+pub(super) fn get_json_dir_path(dir_path: impl AsRef<OsStr>) -> PathBuf {
+    Path::new(&dir_path).join("json")
+}
+
 pub(super) fn get_json_log_path(dir_path: impl AsRef<OsStr>, stats: &TestStats) -> PathBuf {
     let file_name = format!("result_{}.json", stats.start_time.format("%Y%m%d_%H%M%S"));
-    Path::new(&dir_path).join("json").join(file_name)
+    get_json_dir_path(dir_path).join(file_name)
 }
 
 pub(super) fn save_json_log(
@@ -263,6 +267,13 @@ fn create_parent_dir(path: impl AsRef<Path>) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub(super) fn load_result_json(path: &Path) -> Result<AllResultJson> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let result: AllResultJson = serde_json::from_reader(reader)?;
+    Ok(result)
 }
 
 #[cfg(test)]

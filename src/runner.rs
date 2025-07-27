@@ -1,5 +1,6 @@
 pub(crate) mod compilie;
 mod io;
+mod list;
 mod multi;
 pub(crate) mod single;
 
@@ -115,6 +116,40 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
         io::save_json_log(&json_file_path, &stats, &args.comment, &tag_name)?;
     }
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Args)]
+pub(crate) struct ListArgs {
+    #[command(flatten)]
+    number: Number,
+    /// Path to the setting file
+    #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
+    setting_file: String,
+}
+
+#[derive(Debug, Clone, Copy, Args)]
+#[group(multiple = false)]
+struct Number {
+    /// Number of results to display
+    #[clap(short = 'n', long = "number", default_value = "10")]
+    number: usize,
+    /// Show all results
+    #[clap(short = 'a', long = "all")]
+    all: bool,
+}
+
+pub(crate) fn list(args: ListArgs) -> Result<()> {
+    let settings = io::load_setting_file(&args.setting_file)
+        .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
+
+    let limit = if args.number.all {
+        None
+    } else {
+        Some(args.number.number)
+    };
+    list::list_past_results(&settings, limit)?;
 
     Ok(())
 }

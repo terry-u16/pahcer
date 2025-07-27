@@ -20,6 +20,8 @@ enum Command {
     Init(settings::InitArgs),
     /// Run tests
     Run(runner::RunArgs),
+    /// List past test results
+    List(runner::ListArgs),
     /// Remove all pahcer-related tags
     Prune,
 }
@@ -40,6 +42,9 @@ fn run_command(args: Cli) -> Result<(), anyhow::Error> {
         }
         Command::Run(args) => {
             runner::run(args)?;
+        }
+        Command::List(args) => {
+            runner::list(args)?;
         }
         Command::Prune => git::prune_tags()?,
     };
