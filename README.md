@@ -288,7 +288,7 @@ $ pahcer run [OPTIONS]
   - コメントはサマリファイルなどにスコアとともに書き出されるため、解答コードの内容のメモなどにご活用ください。
 - `-t`, `--tag`
   - テスト実行時に自動でGitタグを作成します。Gitがインストールされている必要があります。
-  - タグ名を指定しない場合、`pahcer/{8文字のランダム文字列}`形式で自動生成されます（例: `pahcer/aB3xK9mZ`）。
+  - タグ名を指定しない場合、`pahcer/{コミットハッシュの最初8桁}`形式で自動生成されます（例: `pahcer/a3f9c1b2`）。
   - タグ名を指定した場合、`pahcer/<tag-name>` という形式で作成されます（例: `pahcer run -t my-solution` → `pahcer/my-solution`）。
   - 作成したタグは `pahcer prune` で一括削除可能です。
 - `-j`, `--json`
@@ -379,8 +379,8 @@ $ pahcer prune
 
 ```sh
 $ pahcer prune
-Deleted tag: pahcer/aB3xK9mZ
-Deleted tag: pahcer/7pQw2nVj
+Deleted tag: pahcer/4e7d8a90
+Deleted tag: pahcer/f2a1b3c4
 Deleted tag: pahcer/my-solution
 ```
 
