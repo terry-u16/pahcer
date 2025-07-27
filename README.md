@@ -267,6 +267,10 @@ $ pahcer run [OPTIONS]
 - `-c`, `--comment`
   - テストケースにコメントを付与します。
   - コメントはサマリファイルなどにスコアとともに書き出されるため、解答コードの内容のメモなどにご活用ください。
+- `-t`, `--tag`
+  - テスト実行時に自動でGitタグを作成します。
+  - タグ名を指定しない場合、`pahcer/{8文字のランダム文字列}`形式で自動生成されます（例: `pahcer/aB3xK9mZ`）。
+  - タグ名を指定した場合、`pahcer/<tag-name>` という形式で作成されます（例: `pahcer run -t my-solution` → `pahcer/my-solution`）。
 - `-j`, `--json`
   - 各ケースの実行結果を表形式ではなくJSON形式でコンソールに出力します。
   - Optunaをはじめとした外部アプリケーションとの連携にご活用ください。
@@ -293,6 +297,25 @@ $ pahcer init -h
 
 ```sh
 $ pahcer run -c 焼きなまし高速化バージョン -j --shuffle --setting-file settings.toml --freeze-best-scores --no-result-file
+```
+
+### `pahcer prune`
+
+pahcerが作成したGitタグを全て削除します。
+
+```sh
+$ pahcer prune
+```
+
+このコマンドは `pahcer/*` パターンにマッチするタグを全て削除します。手動で作成したタグには影響しません。
+
+#### 実行例
+
+```sh
+$ pahcer prune
+Deleted tag: pahcer/aB3xK9mZ
+Deleted tag: pahcer/7pQw2nVj
+Deleted tag: pahcer/my-solution
 ```
 
 ## 設定ファイル
