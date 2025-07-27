@@ -3,7 +3,10 @@ mod io;
 mod multi;
 pub(crate) mod single;
 
-use crate::settings::{Settings, SETTING_FILE_PATH};
+use crate::{
+    git,
+    settings::{Settings, SETTING_FILE_PATH},
+};
 use anyhow::{ensure, Context, Result};
 use clap::Args;
 use compilie::compile;
@@ -21,6 +24,9 @@ pub(crate) struct RunArgs {
     /// Output the result in JSON format
     #[clap(short = 'j', long = "json")]
     json: bool,
+    /// Tag for the commit
+    #[clap(short = 't', long = "tag", num_args = 0..=1, default_missing_value = "")]
+    tag: Option<String>,
     /// Path to the setting file
     #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
@@ -44,6 +50,16 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     if !args.no_compile {
         compile(&settings.test.compile_steps)?;
     }
+
+    let tag_name = match args.tag {
+        Some(tag) => {
+            let tag = if tag.is_empty() { None } else { Some(tag) };
+            let tag = git::commit(tag).context("Failed to tag the current changes.")?;
+            println!("Tagged: {}", tag);
+            Some(tag)
+        }
+        None => None,
+    };
 
     let single_runner = single::SingleCaseRunner::new(
         settings.test.test_steps.clone(),
@@ -95,9 +111,9 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
 
     if !args.no_result_file {
         let summary_file_path = io::get_summary_score_path(&settings.test.out_dir);
-        io::save_summary_log(&summary_file_path, &stats, &args.comment)?;
+        io::save_summary_log(&summary_file_path, &stats, &args.comment, &tag_name)?;
         let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
-        io::save_json_log(&json_file_path, &stats, &args.comment)?;
+        io::save_json_log(&json_file_path, &stats, &args.comment, &tag_name)?;
     }
 
     Ok(())
