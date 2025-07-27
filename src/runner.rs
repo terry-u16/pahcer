@@ -9,7 +9,7 @@ use crate::{
     settings::{Settings, SETTING_FILE_PATH},
 };
 use anyhow::{ensure, Context, Result};
-use clap::Args;
+use clap::{ArgGroup, Args};
 use compilie::compile;
 use rand::prelude::*;
 use regex::Regex;
@@ -121,23 +121,37 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
 }
 
 #[derive(Debug, Clone, Args)]
+#[command(group(    
+    ArgGroup::new("display_mode")
+        .args(["number", "all"])
+        .multiple(false) // 同時指定不可にする
+    )
+)]
 pub(crate) struct ListArgs {
-    /// Number of results to display
-    #[clap(short = 'n', long = "number", default_value = "10")]
-    number: usize,
-    /// Show all results (overrides -n/--number)
-    #[clap(long = "all")]
-    all: bool,
+    #[command(flatten)]
+    number: Number,
     /// Path to the setting file
     #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
+}
+
+#[derive(Debug, Clone, Copy, Args)]
+#[group(multiple = false)]
+struct Number {
+        /// Number of results to display
+    #[clap(short = 'n', long = "number", default_value = "10")]
+    number: usize,
+    /// Show all results
+    #[clap(short = 'a', long = "all")]
+    all: bool,
+
 }
 
 pub(crate) fn list(args: ListArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
 
-    let limit = if args.all { None } else { Some(args.number) };
+    let limit = if args.number.all { None } else { Some(args.number.number) };
     list::list_past_results(&settings, limit)?;
 
     Ok(())
