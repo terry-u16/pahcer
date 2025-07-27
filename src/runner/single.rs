@@ -233,6 +233,9 @@ impl SingleCaseRunner {
         outputs.push(output.stdout);
         outputs.push(output.stderr);
 
+        // Perform the status check after file output operations to ensure stdout and stderr
+        // are captured and saved even if the command execution fails. This ordering is critical
+        // for debugging and logging purposes.
         anyhow::ensure!(
             output.status.success(),
             "Failed to run ({}). command: {:?}",
