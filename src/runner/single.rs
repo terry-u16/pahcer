@@ -218,13 +218,6 @@ impl SingleCaseRunner {
             .with_context(|| format!("Failed to run. command: {:?}", cmd))?;
         let execution_time = since.elapsed();
 
-        anyhow::ensure!(
-            output.status.success(),
-            "Failed to run ({}). command: {:?}",
-            output.status,
-            cmd
-        );
-
         if let Some(stdout) = &step.stdout {
             let stdout = Self::replace_placeholder(stdout, seed);
             Self::write_output(Path::new(&stdout), &output.stdout)
@@ -239,6 +232,13 @@ impl SingleCaseRunner {
 
         outputs.push(output.stdout);
         outputs.push(output.stderr);
+
+        anyhow::ensure!(
+            output.status.success(),
+            "Failed to run ({}). command: {:?}",
+            output.status,
+            cmd
+        );
 
         Ok(execution_time)
     }
