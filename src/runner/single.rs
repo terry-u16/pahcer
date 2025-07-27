@@ -167,7 +167,7 @@ impl SingleCaseRunner {
                 };
                 TestResult::new(test_case, score, execution_time)
             }
-            Err(e) => TestResult::new(test_case, Err(format!("{:#}", e)), Duration::ZERO),
+            Err(e) => TestResult::new(test_case, Err(format!("{e:#}")), Duration::ZERO),
         }
     }
 
@@ -215,7 +215,7 @@ impl SingleCaseRunner {
         let since = Instant::now();
         let output = cmd
             .output()
-            .with_context(|| format!("Failed to run. command: {:?}", cmd))?;
+            .with_context(|| format!("Failed to run. command: {cmd:?}"))?;
         let execution_time = since.elapsed();
 
         if let Some(stdout) = &step.stdout {
@@ -249,7 +249,7 @@ impl SingleCaseRunner {
     fn create_parent_dir_all(path: impl AsRef<OsStr>) -> Result<()> {
         if let Some(parent) = std::path::Path::new(&path).parent() {
             std::fs::create_dir_all(parent)
-                .with_context(|| format!("Failed to create directory: {:?}", parent))?;
+                .with_context(|| format!("Failed to create directory: {parent:?}"))?;
         }
 
         Ok(())
@@ -273,12 +273,12 @@ impl SingleCaseRunner {
                     .filter_map(|m| m.name("score").and_then(|s| s.as_str().parse().ok()))
                     .last()
             })
-            .last()
+            .next_back()
     }
 
     fn replace_placeholder(s: &str, seed: u64) -> String {
         s.replace("{SEED}", &seed.to_string())
-            .replace("{SEED04}", &format!("{:04}", seed))
+            .replace("{SEED04}", &format!("{seed:04}"))
     }
 }
 

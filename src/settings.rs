@@ -85,7 +85,7 @@ pub(crate) fn gen_setting_file(args: &InitArgs) -> Result<()> {
     settings = settings.replace("{OBJECTIVE}", &format!("{}", args.objective));
 
     let out_dir = "./pahcer";
-    writeln!(writer, "{}", settings)?;
+    writeln!(writer, "{settings}")?;
 
     gen_gitignore(out_dir)?;
 

@@ -59,7 +59,7 @@ pub(super) fn save_best_scores(
 ) -> Result<()> {
     let json_map: BTreeMap<String, u64> = best_scores
         .into_iter()
-        .map(|(key, value)| (format!("{:04}", key), value.get()))
+        .map(|(key, value)| (format!("{key:04}"), value.get()))
         .collect();
 
     create_parent_dir(&path)?;
@@ -82,7 +82,7 @@ pub(super) fn save_summary_log(
     tag_name: &Option<String>,
 ) -> Result<()> {
     let comment = match tag_name {
-        Some(tag_name) => format!("({}) {}", tag_name, comment),
+        Some(tag_name) => format!("({tag_name}) {comment}"),
         None => comment.to_string(),
     };
 
@@ -138,8 +138,7 @@ fn save_summary_log_inner(
 
     writeln!(
         writer,
-        "{} | {:>5} | {:>16} | {:>16} | {:>12} | {:>11} | {}",
-        start_time, case_count, score, average_score, score_log10, average_score_log10, comment
+        "{start_time} | {case_count:>5} | {score:>16} | {average_score:>16} | {score_log10:>12} | {average_score_log10:>11} | {comment}"
     )?;
 
     Ok(())
@@ -308,10 +307,10 @@ mod test {
         let actual = String::from_utf8(buf).unwrap();
 
         eprintln!("[Expected]");
-        eprintln!("{}", expected);
+        eprintln!("{expected}");
 
         eprintln!("[Actual]");
-        eprintln!("{}", actual);
+        eprintln!("{actual}");
 
         assert_eq!(actual, expected);
 

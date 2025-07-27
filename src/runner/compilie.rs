@@ -19,7 +19,7 @@ pub(super) fn compile(steps: &[CompileStep]) -> Result<()> {
 
         let status = cmd
             .status()
-            .with_context(|| format!("Failed to compile. command: {:?}", cmd))?;
+            .with_context(|| format!("Failed to compile. command: {cmd:?}"))?;
 
         if !status.success() {
             return Err(anyhow::anyhow!(

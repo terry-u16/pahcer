@@ -65,7 +65,7 @@ impl Printer for ConsolePrinter {
         );
 
         match result.score() {
-            Ok(_) => writeln!(writer, "{}", record)?,
+            Ok(_) => writeln!(writer, "{record}")?,
             Err(e) => {
                 writeln!(writer, "{}", record.yellow())?;
                 writeln!(writer, "{}", e.to_string().yellow())?;
@@ -86,16 +86,11 @@ impl Printer for ConsolePrinter {
         let ac_count =
             stats.results.len() - stats.results.iter().filter(|r| r.score().is_err()).count();
 
-        writeln!(writer, "Average Score          : {}", average_score)?;
+        writeln!(writer, "Average Score          : {average_score}")?;
+        writeln!(writer, "Average Score (log10)  : {average_score_log10:.5}")?;
         writeln!(
             writer,
-            "Average Score (log10)  : {:.5}",
-            average_score_log10
-        )?;
-        writeln!(
-            writer,
-            "Average Relative Score : {:.3}",
-            average_relative_score
+            "Average Relative Score : {average_relative_score:.3}"
         )?;
 
         let ac = format!("{} / {}", ac_count, stats.results.len());
@@ -104,7 +99,7 @@ impl Printer for ConsolePrinter {
         } else {
             ac.bold().yellow().to_string()
         };
-        writeln!(writer, "Accepted               : {}", ac)?;
+        writeln!(writer, "Accepted               : {ac}")?;
 
         let max_time = stats
             .results
@@ -262,13 +257,13 @@ Max Execution Time     : 12,345 ms
 ";
 
         println!("[EXPECTED]");
-        println!("{}", expected);
+        println!("{expected}");
 
         println!();
         println!("[ACTUAL]");
 
         let actual = String::from_utf8(*buf).unwrap();
-        println!("{}", actual);
+        println!("{actual}");
 
         assert_eq!(expected, actual);
     }
@@ -291,13 +286,13 @@ Max Execution Time     : 12,345 ms
 "##;
 
         println!("[EXPECTED]");
-        println!("{}", expected);
+        println!("{expected}");
 
         println!();
         println!("[ACTUAL]");
 
         let actual = String::from_utf8(*buf).unwrap();
-        println!("{}", actual);
+        println!("{actual}");
 
         assert_eq!(expected, actual);
     }

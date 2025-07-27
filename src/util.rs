@@ -26,11 +26,11 @@ pub(crate) fn format_float_with_commas(x: f64, decimals: NonZeroUsize) -> String
         .to_formatted_string(&Locale::en);
 
     // 整数部と小数部を再連結
-    let result = format!("{}.{}", int_formatted, frac_part);
+    let result = format!("{int_formatted}.{frac_part}");
 
     // 負数なら符号を付けて返す
     if is_negative {
-        format!("-{}", result)
+        format!("-{result}")
     } else {
         result
     }
