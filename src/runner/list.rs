@@ -114,7 +114,7 @@ pub(super) fn list_past_results(settings: &Settings, limit: Option<usize>) -> Re
     let mut table = Table::new(table_rows);
     table.with(Style::markdown());
     table.modify(Columns::new(1..=4), Alignment::right());
-    println!("{}", table);
+    println!("{table}");
 
     Ok(())
 }
@@ -129,7 +129,7 @@ fn convert_to_table_row(
     let time_str = result.start_time.format("%m/%d %H:%M:%S").to_string();
     let ac_count = result.case_count - result.wa_seeds.len();
     let ac_total = format!("{}/{}", ac_count, result.case_count);
-    let ac_total = if result.wa_seeds.len() == 0 {
+    let ac_total = if result.wa_seeds.is_empty() {
         ac_total.green()
     } else {
         ac_total.yellow()
@@ -140,14 +140,14 @@ fn convert_to_table_row(
     } else {
         0.0
     };
-    let avg_score = format!("{:.2}", avg_score_f64);
+    let avg_score = format!("{avg_score_f64:.2}");
     let avg_score = if avg_score_f64 == best_avg_absolute_score {
         avg_score.bold().green().to_string()
     } else {
         avg_score
     };
     let avg_relative_f64 = calc_average_relative_score(&result, best_scores, objective);
-    let avg_relative = format!("{:.3}", avg_relative_f64);
+    let avg_relative = format!("{avg_relative_f64:.3}");
     let avg_relative = if avg_relative_f64 == best_avg_relative_score {
         avg_relative.bold().green().to_string()
     } else {
