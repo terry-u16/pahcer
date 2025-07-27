@@ -82,7 +82,7 @@ pub(super) fn save_summary_log(
     tag_name: &Option<String>,
 ) -> Result<()> {
     let comment = match tag_name {
-        Some(branch_name) => format!("({}) {}", branch_name, comment),
+        Some(tag_name) => format!("({}) {}", tag_name, comment),
         None => comment.to_string(),
     };
 
