@@ -98,7 +98,7 @@ fn load_results(settings: &Settings, limit: Option<usize>) -> Result<Vec<AllResu
     Ok(results)
 }
 
-fn calculate_best_avg_absolute_score(settings: &Settings, results: &Vec<AllResultJson>) -> f64 {
+fn calculate_best_avg_absolute_score(settings: &Settings, results: &[AllResultJson]) -> f64 {
     let best_avg_absolute_score = results
         .iter()
         .map(|result| {
@@ -117,18 +117,15 @@ fn calculate_best_avg_absolute_score(settings: &Settings, results: &Vec<AllResul
     best_avg_absolute_score
 }
 
-fn load_best_scores(settings: &Settings) -> HashMap<u64, std::num::NonZeroU64> {
+fn load_best_scores(settings: &Settings) -> HashMap<u64, NonZeroU64> {
     let best_score_path = io::get_best_score_path(&settings.test.out_dir);
-    let best_scores =
-        io::load_best_scores(&best_score_path).unwrap_or_else(|_| std::collections::HashMap::new());
-
-    best_scores
+    io::load_best_scores(&best_score_path).unwrap_or_else(|_| std::collections::HashMap::new())
 }
 
 fn calculate_best_avg_relative_score(
     settings: &Settings,
-    results: &Vec<AllResultJson>,
-    best_scores: &HashMap<u64, std::num::NonZero<u64>>,
+    results: &[AllResultJson],
+    best_scores: &HashMap<u64, NonZeroU64>,
 ) -> f64 {
     let best_avg_relative_score = results
         .iter()
@@ -171,7 +168,7 @@ fn print_table(
     settings: &Settings,
     results: Vec<AllResultJson>,
     best_avg_absolute_score: f64,
-    best_scores: HashMap<u64, std::num::NonZero<u64>>,
+    best_scores: HashMap<u64, NonZeroU64>,
     best_avg_relative_score: f64,
 ) {
     // 結果を読み込んで表示
