@@ -92,7 +92,13 @@ fn load_results(settings: &Settings, limit: Option<usize>) -> Result<Vec<AllResu
     // ファイルを読み込み
     let results = json_files
         .iter()
-        .filter_map(|file| load_result_json(file).ok())
+        .filter_map(|file| match load_result_json(file) {
+            Ok(result) => Some(result),
+            Err(e) => {
+                eprintln!("Failed to load JSON file {}: {}", file.display(), e);
+                None
+            }
+        })
         .collect::<Vec<_>>();
 
     Ok(results)
