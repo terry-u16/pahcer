@@ -1,5 +1,6 @@
 pub(crate) mod compilie;
 mod io;
+mod list;
 mod multi;
 pub(crate) mod single;
 
@@ -39,16 +40,6 @@ pub(crate) struct RunArgs {
     /// Do not compile the code
     #[clap(long = "no-compile")]
     no_compile: bool,
-}
-
-#[derive(Debug, Clone, Args)]
-pub(crate) struct ListArgs {
-    /// Number of results to display
-    #[clap(short = 'n', long = "number", default_value = "10")]
-    number: usize,
-    /// Path to the setting file
-    #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
-    setting_file: String,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -129,11 +120,25 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Clone, Args)]
+pub(crate) struct ListArgs {
+    /// Number of results to display
+    #[clap(short = 'n', long = "number", default_value = "10")]
+    number: usize,
+    /// Show all results (overrides -n/--number)
+    #[clap(long = "all")]
+    all: bool,
+    /// Path to the setting file
+    #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
+    setting_file: String,
+}
+
 pub(crate) fn list(args: ListArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
 
-    io::list_past_results(&settings.test.out_dir, args.number)?;
+    let limit = if args.all { None } else { Some(args.number) };
+    list::list_past_results(&settings, limit)?;
 
     Ok(())
 }
