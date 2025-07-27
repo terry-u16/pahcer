@@ -207,7 +207,26 @@ $ pahcer run
 
 デフォルトでは、 seed=0 から seed=99 までの100ケースが実行されます。カスタマイズしたい場合やうまく動かない場合は `./pahcer_config.toml` を編集してください。
 
-### 4. Optunaとの連携によるパラメータ最適化（オプション）
+### 4. 実行結果確認
+
+以下のコマンドを実行すると、最新10件の実行結果が表形式で確認できます。
+
+```sh
+# 最新10件の結果を表示
+$ pahcer list
+```
+
+オプションを指定することで、表示件数を変更することもできます。
+
+```sh
+# 最新5件の結果を表示
+$ pahcer list -n 5
+
+# 全ての結果を表示
+$ pahcer list -a
+```
+
+### 5. Optunaとの連携によるパラメータ最適化（オプション）
 
 Optunaとの連携によるパラメータ最適化も可能です。詳細は `./optuna-sample/README.md` をご参照ください。
 
@@ -271,6 +290,7 @@ $ pahcer run [OPTIONS]
   - テスト実行時に自動でGitタグを作成します。
   - タグ名を指定しない場合、`pahcer/{8文字のランダム文字列}`形式で自動生成されます（例: `pahcer/aB3xK9mZ`）。
   - タグ名を指定した場合、`pahcer/<tag-name>` という形式で作成されます（例: `pahcer run -t my-solution` → `pahcer/my-solution`）。
+  - 作成したタグは `pahcer prune` で一括削除可能です。
 - `-j`, `--json`
   - 各ケースの実行結果を表形式ではなくJSON形式でコンソールに出力します。
   - Optunaをはじめとした外部アプリケーションとの連携にご活用ください。
@@ -297,6 +317,52 @@ $ pahcer init -h
 
 ```sh
 $ pahcer run -c 焼きなまし高速化バージョン -j --shuffle --setting-file settings.toml --freeze-best-scores --no-result-file
+```
+
+### `pahcer list`
+
+過去のテスト実行結果を表形式で一覧表示します。
+
+```sh
+$ pahcer list [OPTIONS]
+```
+
+実行結果のJSONファイルを読み込み、以下の情報を含むテーブルを表示します。
+
+- `Time` : テスト実行日時
+- `AC/All` : Accept数/全テストケース数
+- `Avg Score` : 平均スコア
+- `Avg Rel.` : 平均相対スコア
+- `Max Time` : 最大実行時間
+- `Tag` : Gitタグ名（`pahcer/`プレフィックスは除去して表示）
+- `Comment` : テスト実行時のコメント
+
+#### オプション
+
+- `-n`, `--number`
+  - 表示する結果の件数を指定します（デフォルト: 10）。
+- `-a`, `--all`
+  - 全ての結果を表示します。
+- `--setting-file`
+  - 読み込む設定ファイル（ `./pahcer_config.toml` ）のパスをデフォルトから変更します。
+
+以下でヘルプが出せます。
+
+```sh
+$ pahcer list -h
+```
+
+#### 実行例
+
+```sh
+# 最新10件の結果を表示
+$ pahcer list
+
+# 最新5件の結果を表示
+$ pahcer list -n 5
+
+# 全ての結果を表示
+$ pahcer list -a
 ```
 
 ### `pahcer prune`
