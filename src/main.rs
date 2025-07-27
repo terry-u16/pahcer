@@ -1,7 +1,7 @@
+mod git;
 pub(crate) mod runner;
 pub(crate) mod settings;
 pub(crate) mod util;
-mod git;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -20,6 +20,8 @@ enum Command {
     Init(settings::InitArgs),
     /// Run tests
     Run(runner::RunArgs),
+    /// Remove all pahcer-related tags
+    Prune,
 }
 
 fn main() {
@@ -39,6 +41,7 @@ fn run_command(args: Cli) -> Result<(), anyhow::Error> {
         Command::Run(args) => {
             runner::run(args)?;
         }
+        Command::Prune => git::prune_tags()?,
     };
     Ok(())
 }

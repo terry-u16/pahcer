@@ -42,6 +42,19 @@ pub(super) fn prune() -> Result<()> {
     Ok(())
 }
 
+/// pahcer関連のタグを削除する
+pub(super) fn prune_tags() -> Result<()> {
+    let tags = list_tags("pahcer/*")?;
+
+    for tag in tags.iter() {
+        check_return_code(Command::new("git").args(&["tag", "-d", tag]).output()?)?;
+
+        println!("Deleted tag: {}", tag);
+    }
+
+    Ok(())
+}
+
 /// 現在のブランチ名を取得する
 fn get_current_branch_name() -> Result<String> {
     let current_branch_name = read_stdout(
@@ -142,6 +155,17 @@ fn list_branches(pattern: &str) -> Result<Vec<String>, anyhow::Error> {
     )?;
 
     Ok(branches.lines().map(|s| s.to_string()).collect())
+}
+
+/// タグ名のリストを取得する
+fn list_tags(pattern: &str) -> Result<Vec<String>, anyhow::Error> {
+    let tags = read_stdout(
+        Command::new("git")
+            .args(&["tag", "--list", pattern])
+            .output()?,
+    )?;
+
+    Ok(tags.lines().map(|s| s.to_string()).collect())
 }
 
 /// コマンドの実行結果を文字列として取得する
