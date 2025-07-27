@@ -6,8 +6,9 @@ use super::{
 };
 use anyhow::{Context as _, Result};
 use chrono::{DateTime, Local};
+use colored::Colorize as _;
 use num_format::{Locale, ToFormattedString as _};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
     ffi::OsStr,
@@ -15,6 +16,10 @@ use std::{
     io::{BufReader, BufWriter, Write},
     num::{NonZeroU64, NonZeroUsize},
     path::{Path, PathBuf},
+};
+use tabled::{
+    settings::{object::Columns, Alignment, Style},
+    Table, Tabled,
 };
 
 const BEST_SCORE_FILE: &str = "best_scores.json";
@@ -144,22 +149,22 @@ fn save_summary_log_inner(
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct AllResultJson<'a> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AllResultJson {
     start_time: DateTime<Local>,
     case_count: usize,
     total_score: u64,
     total_score_log10: f64,
     total_relative_score: f64,
     max_execution_time: f64,
-    comment: &'a str,
-    tag_name: &'a Option<String>,
+    comment: String,
+    tag_name: Option<String>,
     wa_seeds: Vec<u64>,
     cases: Vec<CaseResultJson>,
 }
 
-impl<'a> AllResultJson<'a> {
-    fn new(stats: &TestStats, comment: &'a str, tag_name: &'a Option<String>) -> Self {
+impl AllResultJson {
+    fn new(stats: &TestStats, comment: &str, tag_name: &Option<String>) -> Self {
         let cases = stats
             .results
             .iter()
@@ -202,15 +207,15 @@ impl<'a> AllResultJson<'a> {
             total_score_log10: stats.score_sum_log10,
             total_relative_score: stats.relative_score_sum,
             max_execution_time,
-            comment,
+            comment: comment.to_string(),
             wa_seeds,
             cases,
-            tag_name,
+            tag_name: tag_name.clone(),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct CaseResultJson {
     seed: u64,
     score: u64,
@@ -263,6 +268,130 @@ fn create_parent_dir(path: impl AsRef<Path>) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[derive(Tabled)]
+struct ResultTableRow {
+    #[tabled(rename = "Time")]
+    time: String,
+    #[tabled(rename = "AC/All")]
+    ac_total: String,
+    #[tabled(rename = "Avg Score")]
+    avg_score: String,
+    #[tabled(rename = "Avg Rel.")]
+    avg_relative: String,
+    #[tabled(rename = "Max Time")]
+    max_time: String,
+    #[tabled(rename = "Tag")]
+    tag: String,
+    #[tabled(rename = "Comment")]
+    comment: String,
+}
+
+pub(super) fn list_past_results(dir_path: impl AsRef<OsStr>, limit: usize) -> Result<()> {
+    use std::fs;
+
+    let json_dir = Path::new(&dir_path).join("json");
+
+    if !json_dir.exists() {
+        println!(
+            "No results found. JSON directory does not exist: {}",
+            json_dir.display()
+        );
+        return Ok(());
+    }
+
+    // JSONファイルを検索
+    let mut json_files = Vec::new();
+    for entry in fs::read_dir(&json_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+            if file_name.starts_with("result_") && file_name.ends_with(".json") {
+                json_files.push(path);
+            }
+        }
+    }
+
+    if json_files.is_empty() {
+        println!("No result files found in {}", json_dir.display());
+        return Ok(());
+    }
+
+    // ファイル名でソート（新しい順）
+    json_files.sort_by(|a, b| {
+        let name_a = a.file_name().unwrap();
+        let name_b = b.file_name().unwrap();
+        name_b.cmp(name_a)
+    });
+
+    // 制限数まで読み込み
+    json_files.truncate(limit);
+
+    // 結果を読み込んで表示
+    let mut table_rows = Vec::new();
+    for json_file in json_files {
+        if let Ok(result) = load_result_json(&json_file) {
+            let time_str = result.start_time.format("%m/%d %H:%M:%S").to_string();
+            let ac_count = result.case_count - result.wa_seeds.len();
+            let ac_total = format!("{}/{}", ac_count, result.case_count);
+            let ac_total = if result.wa_seeds.len() == 0 {
+                ac_total.green()
+            } else {
+                ac_total.yellow()
+            }
+            .to_string();
+            let avg_score = if result.case_count > 0 {
+                result.total_score as f64 / result.case_count as f64
+            } else {
+                0.0
+            };
+            let avg_score = format!("{:.2}", avg_score);
+            let avg_relative = if result.case_count > 0 {
+                result.total_relative_score / result.case_count as f64
+            } else {
+                0.0
+            };
+            let avg_relative = format!("{:.3}", avg_relative);
+            let max_time = format!("{:.0} ms", result.max_execution_time * 1e3);
+            let tag_display = result
+                .tag_name
+                .as_deref()
+                .unwrap_or("-")
+                .replace("pahcer/", "");
+
+            table_rows.push(ResultTableRow {
+                time: time_str,
+                ac_total,
+                avg_score,
+                avg_relative,
+                max_time,
+                tag: tag_display,
+                comment: result.comment,
+            });
+        }
+    }
+
+    if table_rows.is_empty() {
+        println!("No valid result files found.");
+        return Ok(());
+    }
+
+    // tabledを使ってテーブルを表示
+    let mut table = Table::new(table_rows);
+    table.with(Style::markdown());
+    table.modify(Columns::new(1..=4), Alignment::right());
+    println!("{}", table);
+
+    Ok(())
+}
+
+fn load_result_json(path: &Path) -> Result<AllResultJson> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let result: AllResultJson = serde_json::from_reader(reader)?;
+    Ok(result)
 }
 
 #[cfg(test)]

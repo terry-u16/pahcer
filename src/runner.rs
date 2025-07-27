@@ -41,6 +41,16 @@ pub(crate) struct RunArgs {
     no_compile: bool,
 }
 
+#[derive(Debug, Clone, Args)]
+pub(crate) struct ListArgs {
+    /// Number of results to display
+    #[clap(short = 'n', long = "number", default_value = "10")]
+    number: usize,
+    /// Path to the setting file
+    #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
+    setting_file: String,
+}
+
 pub(crate) fn run(args: RunArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
@@ -115,6 +125,15 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         let json_file_path = io::get_json_log_path(&settings.test.out_dir, &stats);
         io::save_json_log(&json_file_path, &stats, &args.comment, &tag_name)?;
     }
+
+    Ok(())
+}
+
+pub(crate) fn list(args: ListArgs) -> Result<()> {
+    let settings = io::load_setting_file(&args.setting_file)
+        .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
+
+    io::list_past_results(&settings.test.out_dir, args.number)?;
 
     Ok(())
 }
