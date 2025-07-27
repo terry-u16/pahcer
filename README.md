@@ -332,7 +332,7 @@ $ pahcer list [OPTIONS]
 - `Time` : テスト実行日時
 - `AC/All` : Accept数/全テストケース数
 - `Avg Score` : 平均スコア
-- `Avg Rel.` : 平均相対スコア
+- `Avg Rel.` : 平均相対スコア（最新のベストスコアを元に再計算されます）
 - `Max Time` : 最大実行時間
 - `Tag` : Gitタグ名（`pahcer/`プレフィックスは除去して表示）
 - `Comment` : テスト実行時のコメント
