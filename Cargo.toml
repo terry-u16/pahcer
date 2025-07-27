@@ -1,6 +1,6 @@
 [package]
 name = "pahcer"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 authors = ["terry_u16"]
 description = "A tool to run tests for AtCoder Heuristic Contest (AHC)"
