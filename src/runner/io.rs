@@ -247,12 +247,12 @@ pub(super) fn save_json_log(
     path: impl AsRef<Path>,
     stats: &TestStats,
     comment: &str,
-    tag_naeme: &Option<String>,
+    tag_name: &Option<String>,
 ) -> Result<()> {
     create_parent_dir(&path)?;
     let file = File::create(path)?;
     let writer = BufWriter::new(file);
-    let json = AllResultJson::new(stats, comment, tag_naeme);
+    let json = AllResultJson::new(stats, comment, tag_name);
     serde_json::to_writer_pretty(writer, &json)?;
 
     Ok(())
