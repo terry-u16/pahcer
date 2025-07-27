@@ -1,8 +1,4 @@
 use anyhow::Result;
-use rand::{
-    distr::{Alphanumeric, SampleString},
-    rng,
-};
 use std::process::{Command, Output};
 
 /// 現在の変更をコミットした上でタグ付けし、タグ名を返す
@@ -14,7 +10,7 @@ pub(super) fn commit(tag_name: Option<String>) -> Result<String> {
         git_commit()?;
     }
 
-    let tag_name = generate_tag_name(tag_name);
+    let tag_name = generate_tag_name(tag_name)?;
     git_tag(&tag_name)?;
 
     if has_diff {
@@ -38,19 +34,36 @@ pub(super) fn prune_tags() -> Result<()> {
 }
 
 /// タグ名を生成する
-fn generate_tag_name(tag_name: Option<String>) -> String {
-    // a-z, A-Z, 0-9の62種類の文字を使って8文字の文字列をランダムに生成する場合、
-    // 衝突確率が0.01%以上にするためには20万回の試行が必要となり、十分に安全
-    // 衝突しているか判定しても良いのだが、めんどくさいのでやらない
-    const NAME_LENGTH: usize = 8;
-    format!(
-        "pahcer/{}",
-        tag_name.unwrap_or_else(|| Alphanumeric.sample_string(&mut rng(), NAME_LENGTH))
-    )
+fn generate_tag_name(tag_name: Option<String>) -> Result<String> {
+    let tag_suffix = match tag_name {
+        Some(name) => name,
+        None => {
+            // 現在のコミットハッシュの8桁を取得
+            get_current_commit_hash()?
+        }
+    };
+
+    Ok(format!("pahcer/{tag_suffix}"))
+}
+
+/// 現在のコミットハッシュの最初の8桁を取得する
+fn get_current_commit_hash() -> Result<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--short=8", "HEAD"])
+        .output()?;
+
+    let hash = read_stdout(output)?;
+    Ok(hash.trim().to_string())
 }
 
 /// タグを生成する
 fn git_tag(tag_name: &str) -> Result<()> {
+    // 既に同じタグが存在する場合は何もしない
+    if tag_exists(tag_name)? {
+        println!("Tag already exists: {tag_name}. Skipping tag creation.");
+        return Ok(());
+    }
+
     check_return_code(
         Command::new("git")
             .args([
@@ -62,6 +75,16 @@ fn git_tag(tag_name: &str) -> Result<()> {
             ])
             .output()?,
     )
+}
+
+/// 指定されたタグが存在するかどうかをチェックする
+fn tag_exists(tag_name: &str) -> Result<bool> {
+    let output = Command::new("git")
+        .args(["tag", "--list", tag_name])
+        .output()?;
+
+    let tags = read_stdout(output)?;
+    Ok(!tags.trim().is_empty())
 }
 
 /// 直前のコミットを取り消す
