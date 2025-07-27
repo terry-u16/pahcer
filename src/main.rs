@@ -28,7 +28,7 @@ fn main() {
     let args = Cli::parse();
 
     if let Err(e) = run_command(args) {
-        eprintln!("{}", format!("Error: {:?}", e).yellow().bold());
+        eprintln!("{}", format!("Error: {e:?}").yellow().bold());
         std::process::exit(1);
     }
 }
