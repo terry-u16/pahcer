@@ -56,7 +56,7 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         Some(tag) => {
             let tag = if tag.is_empty() { None } else { Some(tag) };
             let tag = git::commit(tag).context("Failed to tag the current changes.")?;
-            println!("Tagged: {tag}");
+            println!("Tag: {tag}");
             Some(tag)
         }
         None => None,
