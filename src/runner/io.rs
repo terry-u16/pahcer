@@ -295,11 +295,13 @@ mod test {
                 TestResult::new(
                     TestCase::new(0, None, Objective::Max),
                     Ok(NonZero::new(1000).unwrap()),
+                    Ok(100.0),
                     Duration::from_millis(1000),
                 ),
                 TestResult::new(
                     TestCase::new(1, None, Objective::Max),
                     Ok(NonZero::new(10000).unwrap()),
+                    Ok(100.0),
                     Duration::from_millis(100),
                 ),
             ],

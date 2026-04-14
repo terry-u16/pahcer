@@ -140,10 +140,11 @@ impl TestStats {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::runner::comparative_score::RelativeScoreCalculator;
     use crate::runner::single::{Objective, TestStep};
     use printer::MockPrinter;
     use regex::Regex;
-    use std::num::NonZero;
+    use std::{num::NonZero, sync::Arc};
 
     thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
@@ -158,7 +159,18 @@ mod test {
             None,
             true,
         )];
-        let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.with(|r| r.clone()));
+        let single_runner = SingleCaseRunner::new(
+            steps,
+            SCORE_REGEX.with(|r| r.clone()),
+            Arc::new(RelativeScoreCalculator::new(
+                [(0, NonZero::new(100).unwrap())]
+                    .into_iter()
+                    .chain([(1, NonZero::new(200).unwrap())])
+                    .chain([(2, NonZero::new(50).unwrap())])
+                    .collect(),
+                Objective::Max,
+            )),
+        );
         let test_cases = vec![
             TestCase::new(0, NonZero::new(100), Objective::Max),
             TestCase::new(1, NonZero::new(200), Objective::Max),

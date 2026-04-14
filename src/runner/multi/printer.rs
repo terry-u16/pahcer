@@ -302,15 +302,18 @@ Max Execution Time     : 12,345 ms
             TestResult::new(
                 TestCase::new(0, NonZero::new(100), Objective::Max),
                 Ok(NonZero::new(1000).unwrap()),
+                Ok(1000.0),
                 Duration::from_millis(1234),
             ),
             TestResult::new(
                 TestCase::new(1, NonZero::new(100), Objective::Max),
                 Ok(NonZero::new(500).unwrap()),
+                Ok(500.0),
                 Duration::from_millis(12345),
             ),
             TestResult::new(
                 TestCase::new(2, NonZero::new(100), Objective::Max),
+                Err("error".to_string()),
                 Err("error".to_string()),
                 Duration::from_millis(1),
             ),

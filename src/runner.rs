@@ -1,3 +1,4 @@
+mod comparative_score;
 pub(crate) mod compilie;
 mod io;
 mod list;
@@ -10,6 +11,7 @@ use crate::{
 };
 use anyhow::{ensure, Context, Result};
 use clap::Args;
+use comparative_score::create_relative_score_calculator;
 use compilie::compile;
 use rand::prelude::*;
 use regex::Regex;
@@ -65,6 +67,7 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     let single_runner = single::SingleCaseRunner::new(
         settings.test.test_steps.clone(),
         Regex::new(&settings.problem.score_regex)?,
+        create_relative_score_calculator(best_scores.clone(), settings.problem.objective),
     );
 
     let seed_range = settings.test.start_seed..settings.test.end_seed;
@@ -143,13 +146,17 @@ struct Number {
 pub(crate) fn list(args: ListArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
+    let best_score_path = io::get_best_score_path(&settings.test.out_dir);
+    let best_scores = io::load_best_scores(&best_score_path)?;
+    let relative_score_calculator =
+        create_relative_score_calculator(best_scores, settings.problem.objective);
 
     let limit = if args.number.all {
         None
     } else {
         Some(args.number.number)
     };
-    list::list_past_results(&settings, limit)?;
+    list::list_past_results(&settings, limit, relative_score_calculator.as_ref())?;
 
     Ok(())
 }
