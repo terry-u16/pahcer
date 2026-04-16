@@ -108,7 +108,11 @@ fn calculate_average_comparative_score(
 
 fn normalize_zero(value: f64) -> f64 {
     // 表示時に `-0.000` になるのを避けるため、符号付きゼロを正規化する。
-    if value == 0.0 { 0.0 } else { value }
+    if value == 0.0 {
+        0.0
+    } else {
+        value
+    }
 }
 
 fn print_table(
