@@ -184,9 +184,11 @@ $ pahcer run
   - `Score` : 実スコア（正の整数値のみ許容）です。0点の場合はWA扱いとなります。
   - `Relative` : ローカルでのベストスコアを100としたときの相対スコアです。
     - `OBJECTIVE = max` のときは `100 * YOURS / BEST` 、 `OBJECTIVE = min` のときは `100 * BEST / YOURS` で計算されます。
+    - `pahcer run --rank` のときは、この列は `Rank` に変わり、ローカルに保存された過去結果に対する順位スコアが表示されます。
 - `Average Score` : その時点までの平均スコアです。
   - `Score` : 実スコアの平均値です。
   - `Relative` : 相対スコアの平均値です。
+    - `pahcer run --rank` のときは、この列は `Rank` に変わり、順位スコアの平均値が表示されます。
 - `Exec. Time` : 実行時間（ミリ秒表示）です。並列実行数などにより変化しうるので参考程度にご覧ください。
 
 このとき、並列実行を行っている都合上seedの順番が実行ごとに変化することに注意してください。途中で実行を中断する場合は `Ctrl+C` を押してください。
@@ -196,6 +198,7 @@ $ pahcer run
 - `Average Score` : 実スコアの平均値です。
 - `Average Score (log10)` : 実スコアの対数を取った値の平均値です。相対スコア問題の評価などに活用いただけます。
 - `Average Relative Score` : 相対スコアの平均値です。
+  - `pahcer run --rank` のときは `Average Rank Score` が表示されます。
 - `Accepted` : Acceptされたケース数です。正の点数を取ったテストケースがAcceptedと見なされます。実行時間が長くてもTLE扱いにはなりませんのでご注意ください。
 - `Max Execution Time` : 実行時間の最大値です。
 
@@ -224,6 +227,9 @@ $ pahcer list -n 5
 
 # 全ての結果を表示
 $ pahcer list -a
+
+# 順位スコアで表示
+$ pahcer list --rank
 ```
 
 ### 5. Optunaとの連携によるパラメータ最適化（オプション）
@@ -306,6 +312,9 @@ $ pahcer run [OPTIONS]
   - 全ケース完了後に実行結果のファイル出力を行わないようにします。
 - `--no-compile`
   - 起動時にコンパイル処理を行わないようにします。
+- `--rank`
+  - 相対スコアの代わりに順位スコアを計算して表示します。
+  - 順位スコアはローカルに保存された `./pahcer/json/result_*.json` を履歴として計算されます。
 
 以下でヘルプが出せます。
 
@@ -317,6 +326,8 @@ $ pahcer init -h
 
 ```sh
 $ pahcer run -c 焼きなまし高速化バージョン -j --shuffle --setting-file settings.toml --freeze-best-scores --no-result-file
+
+$ pahcer run --rank
 ```
 
 ### `pahcer list`
@@ -333,6 +344,7 @@ $ pahcer list [OPTIONS]
 - `AC/All` : Accept数/全テストケース数
 - `Avg Score` : 平均スコア
 - `Avg Rel.` : 平均相対スコア（最新のベストスコアを元に再計算されます）
+  - `--rank` を付けた場合は `Avg Rank` に変わり、ローカルに保存された結果同士の順位スコアが表示されます。
 - `Max Time` : 最大実行時間
 - `Tag` : Gitタグ名（`pahcer/`プレフィックスは除去して表示）
 - `Comment` : テスト実行時のコメント
@@ -345,6 +357,9 @@ $ pahcer list [OPTIONS]
   - 全ての結果を表示します。
 - `--setting-file`
   - 読み込む設定ファイル（ `./pahcer_config.toml` ）のパスをデフォルトから変更します。
+- `--rank`
+  - 相対スコアの代わりに順位スコアで再計算して表示します。
+  - 順位スコアはローカルに保存された `./pahcer/json/result_*.json` 同士を比較して計算されます。
 
 以下でヘルプが出せます。
 
@@ -357,6 +372,9 @@ $ pahcer list -h
 ```sh
 # 最新10件の結果を表示
 $ pahcer list
+
+# 順位スコアで表示
+$ pahcer list --rank
 
 # 最新5件の結果を表示
 $ pahcer list -n 5
