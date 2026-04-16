@@ -1,11 +1,10 @@
 use super::comparative_score::ComparativeScoreCalculator;
-use super::io::{load_result_json, AllResultJson};
+use super::io::AllResultJson;
 use crate::runner::io;
 use crate::runner::single::Objective;
 use crate::settings::Settings;
 use anyhow::{ensure, Result};
 use colored::Colorize as _;
-use std::fs;
 use std::num::NonZeroU64;
 use tabled::{
     settings::{object::Columns, Alignment, Style},
@@ -37,7 +36,12 @@ pub(super) fn list_past_results(
     score_calculator: &dyn ComparativeScoreCalculator,
 ) -> Result<()> {
     // JSONファイルから結果を読み込む
-    let results = load_results(settings, limit)?;
+    let results = io::load_result_jsons(&settings.test.out_dir, limit)?;
+    ensure!(
+        !results.is_empty(),
+        "No results found. JSON directory does not exist or contains no result files: {}",
+        io::get_json_dir_path(&settings.test.out_dir).display()
+    );
 
     // 絶対ベストスコア
     let best_avg_absolute_score = calculate_best_avg_absolute_score(settings, &results);
@@ -55,55 +59,6 @@ pub(super) fn list_past_results(
     );
 
     Ok(())
-}
-
-fn load_results(settings: &Settings, limit: Option<usize>) -> Result<Vec<AllResultJson>> {
-    let json_dir = io::get_json_dir_path(&settings.test.out_dir);
-
-    ensure!(
-        json_dir.exists(),
-        "No results found. JSON directory does not exist: {}",
-        json_dir.display()
-    );
-
-    let mut json_files = vec![];
-
-    for entry in fs::read_dir(&json_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-
-        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-            if file_name.starts_with("result_") && file_name.ends_with(".json") {
-                json_files.push(path);
-            }
-        }
-    }
-
-    // ファイル名でソート（新しい順）
-    json_files.sort_by(|a, b| {
-        let name_a = a.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        let name_b = b.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        name_b.cmp(name_a)
-    });
-
-    // 制限数まで読み込み（Noneの場合は制限なし）
-    if let Some(limit_value) = limit {
-        json_files.truncate(limit_value);
-    }
-
-    // ファイルを読み込み
-    let results = json_files
-        .iter()
-        .filter_map(|file| match load_result_json(file) {
-            Ok(result) => Some(result),
-            Err(e) => {
-                eprintln!("Failed to load JSON file {}: {}", file.display(), e);
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    Ok(results)
 }
 
 fn calculate_best_avg_absolute_score(settings: &Settings, results: &[AllResultJson]) -> f64 {

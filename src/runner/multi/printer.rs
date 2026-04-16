@@ -19,6 +19,7 @@ pub(super) struct ConsolePrinter {
     score_width: usize,
     score_sum: u64,
     relative_score_sum: f64,
+    comparative_label: &'static str,
 }
 
 impl Printer for ConsolePrinter {
@@ -90,7 +91,8 @@ impl Printer for ConsolePrinter {
         writeln!(writer, "Average Score (log10)  : {average_score_log10:.5}")?;
         writeln!(
             writer,
-            "Average Relative Score : {average_relative_score:.3}"
+            "Average {} Score : {average_relative_score:.3}",
+            self.comparative_label
         )?;
 
         let ac = format!("{} / {}", ac_count, stats.results.len());
@@ -118,7 +120,7 @@ impl Printer for ConsolePrinter {
 }
 
 impl ConsolePrinter {
-    pub(super) fn new(testcase_count: usize) -> Self {
+    pub(super) fn new(testcase_count: usize, comparative_label: &'static str) -> Self {
         assert!(testcase_count > 0);
 
         Self {
@@ -127,6 +129,7 @@ impl ConsolePrinter {
             score_width: 7,
             score_sum: 0,
             relative_score_sum: 0.0,
+            comparative_label,
         }
     }
 
@@ -153,7 +156,13 @@ impl ConsolePrinter {
         writeln!(
             writer,
             "| {:^test_width$} | {:^4} | {:^score_width2$} | {:^8} | {:^average_score_width2$} | {:^8} | {:^9} |",
-            "", "", "Score", "Relative", "Score", "Relative", "Time"
+            "",
+            "",
+            "Score",
+            self.comparative_label,
+            "Score",
+            self.comparative_label,
+            "Time"
         )?;
 
         let test_width = test_width + 2;
@@ -171,11 +180,16 @@ impl ConsolePrinter {
 
 pub(super) struct JsonPrinter {
     completed_count: usize,
+    #[allow(dead_code)]
+    comparative_label: &'static str,
 }
 
 impl JsonPrinter {
-    pub(super) fn new() -> Self {
-        Self { completed_count: 0 }
+    pub(super) fn new(comparative_label: &'static str) -> Self {
+        Self {
+            completed_count: 0,
+            comparative_label,
+        }
     }
 }
 
@@ -229,7 +243,7 @@ mod test {
     #[test]
     fn test_console_printer() {
         colored::control::set_override(true);
-        let mut printer = ConsolePrinter::new(3);
+        let mut printer = ConsolePrinter::new(3, "Relative");
 
         let test_results = gen_test_results();
         let mut buf = Box::new(vec![]);
@@ -270,7 +284,7 @@ Max Execution Time     : 12,345 ms
 
     #[test]
     fn test_json_printer() {
-        let mut printer = JsonPrinter::new();
+        let mut printer = JsonPrinter::new("Relative");
 
         let test_results = gen_test_results();
 
