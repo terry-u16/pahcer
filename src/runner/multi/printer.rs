@@ -18,7 +18,8 @@ pub(super) struct ConsolePrinter {
     completed_count: usize,
     score_width: usize,
     score_sum: u64,
-    relative_score_sum: f64,
+    comparative_score_sum: f64,
+    comparative_label: &'static str,
 }
 
 impl Printer for ConsolePrinter {
@@ -27,9 +28,9 @@ impl Printer for ConsolePrinter {
         assert!(self.completed_count <= self.testcase_count);
 
         let score = result.score().as_ref().map(|s| s.get()).unwrap_or(0);
-        let relative_score = result.relative_score().as_ref().copied().unwrap_or(0.0);
+        let comparative_score = result.comparative_score().as_ref().copied().unwrap_or(0.0);
         self.score_sum += score;
-        self.relative_score_sum += relative_score;
+        self.comparative_score_sum += comparative_score;
 
         if self.completed_count == 1 {
             self.print_header(writer)?;
@@ -47,7 +48,7 @@ impl Printer for ConsolePrinter {
             .execution_time()
             .as_millis()
             .to_formatted_string(&Locale::en);
-        let average_relative_score = self.relative_score_sum / self.completed_count as f64;
+        let average_comparative_score = self.comparative_score_sum / self.completed_count as f64;
         self.score_width = self.score_width.max(score.len());
         let score_width = self.score_width;
         let average_score_width = score_width + 3;
@@ -58,9 +59,9 @@ impl Printer for ConsolePrinter {
             self.testcase_count,
             result.test_case().seed(),
             score,
-            relative_score,
+            comparative_score,
             average_score,
-            average_relative_score,
+            average_comparative_score,
             execution_time,
         );
 
@@ -82,7 +83,7 @@ impl Printer for ConsolePrinter {
             nonzero2,
         );
         let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
-        let average_relative_score = stats.relative_score_sum / stats.results.len() as f64;
+        let average_comparative_score = stats.comparative_score_sum / stats.results.len() as f64;
         let ac_count =
             stats.results.len() - stats.results.iter().filter(|r| r.score().is_err()).count();
 
@@ -90,7 +91,8 @@ impl Printer for ConsolePrinter {
         writeln!(writer, "Average Score (log10)  : {average_score_log10:.5}")?;
         writeln!(
             writer,
-            "Average Relative Score : {average_relative_score:.3}"
+            "Average {} Score : {average_comparative_score:.3}",
+            self.comparative_label
         )?;
 
         let ac = format!("{} / {}", ac_count, stats.results.len());
@@ -118,7 +120,7 @@ impl Printer for ConsolePrinter {
 }
 
 impl ConsolePrinter {
-    pub(super) fn new(testcase_count: usize) -> Self {
+    pub(super) fn new(testcase_count: usize, comparative_label: &'static str) -> Self {
         assert!(testcase_count > 0);
 
         Self {
@@ -126,7 +128,8 @@ impl ConsolePrinter {
             completed_count: 0,
             score_width: 7,
             score_sum: 0,
-            relative_score_sum: 0.0,
+            comparative_score_sum: 0.0,
+            comparative_label,
         }
     }
 
@@ -153,7 +156,13 @@ impl ConsolePrinter {
         writeln!(
             writer,
             "| {:^test_width$} | {:^4} | {:^score_width2$} | {:^8} | {:^average_score_width2$} | {:^8} | {:^9} |",
-            "", "", "Score", "Relative", "Score", "Relative", "Time"
+            "",
+            "",
+            "Score",
+            self.comparative_label,
+            "Score",
+            self.comparative_label,
+            "Time"
         )?;
 
         let test_width = test_width + 2;
@@ -187,7 +196,7 @@ impl Printer for JsonPrinter {
             progress: self.completed_count,
             seed: result.test_case().seed(),
             score: result.score().as_ref().map(|s| s.get()).unwrap_or(0),
-            relative_score: result.relative_score().as_ref().copied().unwrap_or(0.0),
+            relative_score: result.comparative_score().as_ref().copied().unwrap_or(0.0),
             execution_time: result.execution_time().as_secs_f64(),
             error_message: result
                 .score()
@@ -229,7 +238,7 @@ mod test {
     #[test]
     fn test_console_printer() {
         colored::control::set_override(true);
-        let mut printer = ConsolePrinter::new(3);
+        let mut printer = ConsolePrinter::new(3, "Relative");
 
         let test_results = gen_test_results();
         let mut buf = Box::new(vec![]);
@@ -302,15 +311,18 @@ Max Execution Time     : 12,345 ms
             TestResult::new(
                 TestCase::new(0, NonZero::new(100), Objective::Max),
                 Ok(NonZero::new(1000).unwrap()),
+                Ok(1000.0),
                 Duration::from_millis(1234),
             ),
             TestResult::new(
                 TestCase::new(1, NonZero::new(100), Objective::Max),
                 Ok(NonZero::new(500).unwrap()),
+                Ok(500.0),
                 Duration::from_millis(12345),
             ),
             TestResult::new(
                 TestCase::new(2, NonZero::new(100), Objective::Max),
+                Err("error".to_string()),
                 Err("error".to_string()),
                 Duration::from_millis(1),
             ),

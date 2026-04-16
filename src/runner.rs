@@ -1,3 +1,4 @@
+mod comparative_score;
 pub(crate) mod compilie;
 mod io;
 mod list;
@@ -10,6 +11,7 @@ use crate::{
 };
 use anyhow::{ensure, Context, Result};
 use clap::Args;
+use comparative_score::{create_rank_score_calculator, create_relative_score_calculator};
 use compilie::compile;
 use rand::prelude::*;
 use regex::Regex;
@@ -40,6 +42,9 @@ pub(crate) struct RunArgs {
     /// Do not compile the code
     #[clap(long = "no-compile")]
     no_compile: bool,
+    /// Use rank score instead of relative score
+    #[clap(long = "rank")]
+    rank: bool,
 }
 
 pub(crate) fn run(args: RunArgs) -> Result<()> {
@@ -62,9 +67,17 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
         None => None,
     };
 
+    let score_calculator = if args.rank {
+        let past_results = io::load_result_jsons(&settings.test.out_dir, None)?;
+        create_rank_score_calculator(&past_results, settings.problem.objective, false)
+    } else {
+        create_relative_score_calculator(best_scores.clone(), settings.problem.objective)
+    };
+
     let single_runner = single::SingleCaseRunner::new(
         settings.test.test_steps.clone(),
         Regex::new(&settings.problem.score_regex)?,
+        score_calculator,
     );
 
     let seed_range = settings.test.start_seed..settings.test.end_seed;
@@ -92,7 +105,12 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     let mut runner = if args.json {
         multi::MultiCaseRunner::new_json(single_runner, test_cases, settings.test.threads)
     } else {
-        multi::MultiCaseRunner::new_console(single_runner, test_cases, settings.test.threads)
+        multi::MultiCaseRunner::new_console(
+            single_runner,
+            test_cases,
+            settings.test.threads,
+            if args.rank { "Rank" } else { "Relative" },
+        )
     };
     let stats = runner.run()?;
 
@@ -127,6 +145,9 @@ pub(crate) struct ListArgs {
     /// Path to the setting file
     #[clap(long = "setting-file", default_value = SETTING_FILE_PATH)]
     setting_file: String,
+    /// Use rank score instead of relative score
+    #[clap(long = "rank")]
+    rank: bool,
 }
 
 #[derive(Debug, Clone, Copy, Args)]
@@ -143,13 +164,26 @@ struct Number {
 pub(crate) fn list(args: ListArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
+    let score_calculator = if args.rank {
+        let all_results = io::load_result_jsons(&settings.test.out_dir, None)?;
+        create_rank_score_calculator(&all_results, settings.problem.objective, true)
+    } else {
+        let best_score_path = io::get_best_score_path(&settings.test.out_dir);
+        let best_scores = io::load_best_scores(&best_score_path)?;
+        create_relative_score_calculator(best_scores, settings.problem.objective)
+    };
 
     let limit = if args.number.all {
         None
     } else {
         Some(args.number.number)
     };
-    list::list_past_results(&settings, limit)?;
+    list::list_past_results(
+        &settings,
+        limit,
+        score_calculator.as_ref(),
+        if args.rank { "Rank" } else { "Rel." },
+    )?;
 
     Ok(())
 }

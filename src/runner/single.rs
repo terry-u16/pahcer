@@ -1,3 +1,4 @@
+use super::comparative_score::ComparativeScoreCalculator;
 use anyhow::{Context, Result};
 use clap::ValueEnum;
 use regex::Regex;
@@ -7,6 +8,7 @@ use std::{
     fmt::Display,
     num::NonZeroU64,
     path::Path,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -41,17 +43,6 @@ impl TestCase {
         }
     }
 
-    pub(super) fn calc_relative_score(&self, new_score: NonZeroU64) -> f64 {
-        let Some(old_score) = self.reference_score else {
-            return 100.0;
-        };
-
-        match self.objective {
-            Objective::Max => new_score.get() as f64 / old_score.get() as f64 * 100.0,
-            Objective::Min => old_score.get() as f64 / new_score.get() as f64 * 100.0,
-        }
-    }
-
     pub(super) fn is_best(&self, new_score: Option<NonZeroU64>) -> bool {
         let Some(new_score) = new_score else {
             return false;
@@ -76,7 +67,7 @@ impl TestCase {
 pub(super) struct TestResult {
     test_case: TestCase,
     score: Result<NonZeroU64, String>,
-    relative_score: Result<f64, String>,
+    comparative_score: Result<f64, String>,
     execution_time: Duration,
 }
 
@@ -84,14 +75,13 @@ impl TestResult {
     pub(super) fn new(
         test_case: TestCase,
         score: Result<NonZeroU64, String>,
+        comparative_score: Result<f64, String>,
         execution_time: Duration,
     ) -> Self {
-        let relative_score = score.clone().map(|s| test_case.calc_relative_score(s));
-
         Self {
             test_case,
             score,
-            relative_score,
+            comparative_score,
             execution_time,
         }
     }
@@ -109,8 +99,8 @@ impl TestResult {
         self.score.as_ref().map(|s| (s.get() as f64).log10())
     }
 
-    pub(super) fn relative_score(&self) -> &Result<f64, String> {
-        &self.relative_score
+    pub(super) fn comparative_score(&self) -> &Result<f64, String> {
+        &self.comparative_score
     }
 
     pub(super) const fn execution_time(&self) -> Duration {
@@ -136,17 +126,23 @@ impl Display for Objective {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(super) struct SingleCaseRunner {
     steps: Vec<TestStep>,
     score_pattern: Regex,
+    comparative_score_calculator: Arc<dyn ComparativeScoreCalculator>,
 }
 
 impl SingleCaseRunner {
-    pub(super) const fn new(steps: Vec<TestStep>, score_pattern: Regex) -> Self {
+    pub(super) fn new(
+        steps: Vec<TestStep>,
+        score_pattern: Regex,
+        comparative_score_calculator: Arc<dyn ComparativeScoreCalculator>,
+    ) -> Self {
         Self {
             steps,
             score_pattern,
+            comparative_score_calculator,
         }
     }
 
@@ -165,9 +161,21 @@ impl SingleCaseRunner {
                     },
                     None => Err("Score not found".to_string()),
                 };
-                TestResult::new(test_case, score, execution_time)
+                let comparative_score = score
+                    .as_ref()
+                    .map(|score| {
+                        self.comparative_score_calculator
+                            .calculate(test_case.seed, *score)
+                    })
+                    .map_err(Clone::clone);
+                TestResult::new(test_case, score, comparative_score, execution_time)
             }
-            Err(e) => TestResult::new(test_case, Err(format!("{e:#}")), Duration::ZERO),
+            Err(e) => TestResult::new(
+                test_case,
+                Err(format!("{e:#}")),
+                Err(format!("{e:#}")),
+                Duration::ZERO,
+            ),
         }
     }
 
@@ -285,6 +293,7 @@ impl SingleCaseRunner {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::runner::comparative_score::RelativeScoreCalculator;
 
     const TEST_CASE: TestCase = TestCase::new(42, None, Objective::Max);
     thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
@@ -312,17 +321,33 @@ mod test {
     }
 
     #[test]
-    fn test_calc_relative_score() {
+    fn test_result_comparative_score() {
         let non_zero_100 = NonZeroU64::new(100).unwrap();
         let non_zero_200 = NonZeroU64::new(200).unwrap();
 
         let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Max);
-        assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
-        assert_eq!(test_case.calc_relative_score(non_zero_200), 200.0);
+        assert_eq!(
+            TestResult::new(test_case, Ok(non_zero_100), Ok(100.0), Duration::ZERO)
+                .comparative_score(),
+            &Ok(100.0)
+        );
+        assert_eq!(
+            TestResult::new(test_case, Ok(non_zero_200), Ok(200.0), Duration::ZERO)
+                .comparative_score(),
+            &Ok(200.0)
+        );
 
         let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Min);
-        assert_eq!(test_case.calc_relative_score(non_zero_100), 100.0);
-        assert_eq!(test_case.calc_relative_score(non_zero_200), 50.0);
+        assert_eq!(
+            TestResult::new(test_case, Ok(non_zero_100), Ok(100.0), Duration::ZERO)
+                .comparative_score(),
+            &Ok(100.0)
+        );
+        assert_eq!(
+            TestResult::new(test_case, Ok(non_zero_200), Ok(50.0), Duration::ZERO)
+                .comparative_score(),
+            &Ok(50.0)
+        );
     }
 
     #[test]
@@ -355,7 +380,7 @@ mod test {
     #[test]
     fn run_test_ok() {
         let steps = vec![gen_teststep("echo", Some("Score = 1234"))];
-        let runner = SingleCaseRunner::new(steps, get_regex());
+        let runner = SingleCaseRunner::new(steps, get_regex(), get_calculator());
         let result = runner.run(TEST_CASE);
         assert_eq!(result.score(), &Ok(NonZeroU64::new(1234).unwrap()));
     }
@@ -363,7 +388,7 @@ mod test {
     #[test]
     fn run_test_score_zero() {
         let steps = vec![gen_teststep("echo", Some("Score = 0"))];
-        let runner = SingleCaseRunner::new(steps, get_regex());
+        let runner = SingleCaseRunner::new(steps, get_regex(), get_calculator());
         let result = runner.run(TEST_CASE);
 
         // 0点以下はWrong Answerとして扱う
@@ -373,7 +398,7 @@ mod test {
     #[test]
     fn run_test_fail() {
         let steps = vec![gen_teststep("false", None)];
-        let runner = SingleCaseRunner::new(steps, get_regex());
+        let runner = SingleCaseRunner::new(steps, get_regex(), get_calculator());
         let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
@@ -381,7 +406,7 @@ mod test {
     #[test]
     fn run_test_invalid_output() {
         let steps = vec![gen_teststep("echo", Some("invalid_output"))];
-        let runner = SingleCaseRunner::new(steps, get_regex());
+        let runner = SingleCaseRunner::new(steps, get_regex(), get_calculator());
         let result = runner.run(TEST_CASE);
         assert!(result.score.is_err());
     }
@@ -393,5 +418,12 @@ mod test {
 
     fn get_regex() -> Regex {
         SCORE_REGEX.with(|r| r.clone())
+    }
+
+    fn get_calculator() -> Arc<dyn ComparativeScoreCalculator> {
+        Arc::new(RelativeScoreCalculator::new(
+            std::collections::HashMap::new(),
+            Objective::Max,
+        ))
     }
 }

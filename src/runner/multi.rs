@@ -20,8 +20,12 @@ impl MultiCaseRunner {
         single_runner: SingleCaseRunner,
         test_cases: Vec<TestCase>,
         threads: usize,
+        comparative_label: &'static str,
     ) -> Self {
-        let printer = Box::new(printer::ConsolePrinter::new(test_cases.len()));
+        let printer = Box::new(printer::ConsolePrinter::new(
+            test_cases.len(),
+            comparative_label,
+        ));
         Self::new(single_runner, test_cases, threads, printer)
     }
 
@@ -106,7 +110,7 @@ pub(super) struct TestStats {
     pub(super) results: Vec<TestResult>,
     pub(super) score_sum: u64,
     pub(super) score_sum_log10: f64,
-    pub(super) relative_score_sum: f64,
+    pub(super) comparative_score_sum: f64,
     pub(super) start_time: DateTime<Local>,
 }
 
@@ -121,9 +125,9 @@ impl TestStats {
             .filter_map(|r| r.score_log10().ok())
             .sum::<f64>()
             .max(0.0);
-        let relative_score_sum = results
+        let comparative_score_sum = results
             .iter()
-            .filter_map(|r| r.relative_score().as_ref().ok())
+            .filter_map(|r| r.comparative_score().as_ref().ok())
             .sum::<f64>()
             .max(0.0);
 
@@ -131,7 +135,7 @@ impl TestStats {
             results,
             score_sum,
             score_sum_log10,
-            relative_score_sum,
+            comparative_score_sum,
             start_time,
         }
     }
@@ -140,10 +144,11 @@ impl TestStats {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::runner::comparative_score::RelativeScoreCalculator;
     use crate::runner::single::{Objective, TestStep};
     use printer::MockPrinter;
     use regex::Regex;
-    use std::num::NonZero;
+    use std::{num::NonZero, sync::Arc};
 
     thread_local!(static SCORE_REGEX: Regex = Regex::new(r"^\s*Score\s*=\s*(?P<score>\d+)\s*$").unwrap());
 
@@ -158,7 +163,18 @@ mod test {
             None,
             true,
         )];
-        let single_runner = SingleCaseRunner::new(steps, SCORE_REGEX.with(|r| r.clone()));
+        let single_runner = SingleCaseRunner::new(
+            steps,
+            SCORE_REGEX.with(|r| r.clone()),
+            Arc::new(RelativeScoreCalculator::new(
+                [(0, NonZero::new(100).unwrap())]
+                    .into_iter()
+                    .chain([(1, NonZero::new(200).unwrap())])
+                    .chain([(2, NonZero::new(50).unwrap())])
+                    .collect(),
+                Objective::Max,
+            )),
+        );
         let test_cases = vec![
             TestCase::new(0, NonZero::new(100), Objective::Max),
             TestCase::new(1, NonZero::new(200), Objective::Max),
@@ -182,6 +198,6 @@ mod test {
         assert_eq!(stats.results.len(), 4);
         assert_eq!(stats.score_sum, 400);
         assert_eq!(stats.score_sum_log10, 8.0);
-        assert_eq!(stats.relative_score_sum, 450.0);
+        assert_eq!(stats.comparative_score_sum, 450.0);
     }
 }

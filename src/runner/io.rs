@@ -53,6 +53,53 @@ pub(super) fn load_best_scores(path: impl AsRef<Path>) -> Result<HashMap<u64, No
     Ok(map)
 }
 
+pub(super) fn load_result_jsons(
+    dir_path: impl AsRef<OsStr>,
+    limit: Option<usize>,
+) -> Result<Vec<AllResultJson>> {
+    let json_dir = get_json_dir_path(dir_path);
+
+    if !json_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut json_files = vec![];
+
+    for entry in std::fs::read_dir(&json_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+            if file_name.starts_with("result_") && file_name.ends_with(".json") {
+                json_files.push(path);
+            }
+        }
+    }
+
+    json_files.sort_by(|a, b| {
+        let name_a = a.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let name_b = b.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        name_b.cmp(name_a)
+    });
+
+    if let Some(limit_value) = limit {
+        json_files.truncate(limit_value);
+    }
+
+    let results = json_files
+        .iter()
+        .filter_map(|file| match load_result_json(file) {
+            Ok(result) => Some(result),
+            Err(e) => {
+                eprintln!("Failed to load JSON file {}: {}", file.display(), e);
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    Ok(results)
+}
+
 pub(super) fn save_best_scores(
     path: impl AsRef<Path>,
     best_scores: HashMap<u64, NonZeroU64>,
@@ -178,7 +225,7 @@ impl AllResultJson {
                 CaseResultJson::new(
                     r.test_case().seed(),
                     score,
-                    *r.relative_score().as_ref().unwrap_or(&0.0),
+                    *r.comparative_score().as_ref().unwrap_or(&0.0),
                     r.execution_time().as_secs_f64(),
                     error_message,
                 )
@@ -200,7 +247,7 @@ impl AllResultJson {
             case_count: stats.results.len(),
             total_score: stats.score_sum,
             total_score_log10: stats.score_sum_log10,
-            total_relative_score: stats.relative_score_sum,
+            total_relative_score: stats.comparative_score_sum,
             max_execution_time,
             comment: comment.to_string(),
             wa_seeds,
@@ -295,11 +342,13 @@ mod test {
                 TestResult::new(
                     TestCase::new(0, None, Objective::Max),
                     Ok(NonZero::new(1000).unwrap()),
+                    Ok(100.0),
                     Duration::from_millis(1000),
                 ),
                 TestResult::new(
                     TestCase::new(1, None, Objective::Max),
                     Ok(NonZero::new(10000).unwrap()),
+                    Ok(100.0),
                     Duration::from_millis(100),
                 ),
             ],
