@@ -7,25 +7,18 @@ use anyhow::{ensure, Result};
 use colored::Colorize as _;
 use std::num::NonZeroU64;
 use tabled::{
+    builder::Builder,
     settings::{object::Columns, Alignment, Style},
-    Table, Tabled,
+    Table,
 };
 
-#[derive(Tabled)]
 struct ResultTableRow {
-    #[tabled(rename = "Time")]
     time: String,
-    #[tabled(rename = "AC/All")]
     ac_total: String,
-    #[tabled(rename = "Avg Score")]
     avg_score: String,
-    #[tabled(rename = "Avg Rel.")]
     avg_relative: String,
-    #[tabled(rename = "Max Time")]
     max_time: String,
-    #[tabled(rename = "Tag")]
     tag: String,
-    #[tabled(rename = "Comment")]
     comment: String,
 }
 
@@ -34,6 +27,7 @@ pub(super) fn list_past_results(
     settings: &Settings,
     limit: Option<usize>,
     score_calculator: &dyn ComparativeScoreCalculator,
+    comparative_label: &'static str,
 ) -> Result<()> {
     // JSONファイルから結果を読み込む
     let results = io::load_result_jsons(&settings.test.out_dir, limit)?;
@@ -56,6 +50,7 @@ pub(super) fn list_past_results(
         score_calculator,
         best_avg_comparative_score,
         best_avg_absolute_score,
+        comparative_label,
     );
 
     Ok(())
@@ -117,6 +112,7 @@ fn print_table(
     score_calculator: &dyn ComparativeScoreCalculator,
     best_avg_comparative_score: f64,
     best_avg_absolute_score: f64,
+    comparative_label: &'static str,
 ) {
     // 結果を読み込んで表示
     let mut table_rows = vec![];
@@ -131,7 +127,29 @@ fn print_table(
     }
 
     // tabledを使ってテーブルを表示
-    let mut table = Table::new(table_rows);
+    let mut builder = Builder::default();
+    builder.push_record([
+        "Time",
+        "AC/All",
+        "Avg Score",
+        &format!("Avg {comparative_label}"),
+        "Max Time",
+        "Tag",
+        "Comment",
+    ]);
+    for row in table_rows {
+        builder.push_record([
+            row.time,
+            row.ac_total,
+            row.avg_score,
+            row.avg_relative,
+            row.max_time,
+            row.tag,
+            row.comment,
+        ]);
+    }
+
+    let mut table = Table::from(builder.build());
     table.with(Style::markdown());
     table.modify(Columns::new(1..=4), Alignment::right());
     println!("{table}");

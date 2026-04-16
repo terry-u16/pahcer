@@ -183,7 +183,12 @@ pub(crate) fn list(args: ListArgs) -> Result<()> {
     } else {
         Some(args.number.number)
     };
-    list::list_past_results(&settings, limit, score_calculator.as_ref())?;
+    list::list_past_results(
+        &settings,
+        limit,
+        score_calculator.as_ref(),
+        if args.rank { "Rank" } else { "Rel." },
+    )?;
 
     Ok(())
 }
