@@ -9,7 +9,6 @@ use std::num::NonZeroU64;
 use tabled::{
     builder::Builder,
     settings::{object::Columns, Alignment, Style},
-    Table,
 };
 
 struct ResultTableRow {
@@ -157,7 +156,7 @@ fn print_table(
         ]);
     }
 
-    let mut table = Table::from(builder.build());
+    let mut table = builder.build();
     table.with(Style::markdown());
     table.modify(Columns::new(1..=4), Alignment::right());
     println!("{table}");
