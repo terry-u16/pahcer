@@ -180,16 +180,11 @@ impl ConsolePrinter {
 
 pub(super) struct JsonPrinter {
     completed_count: usize,
-    #[allow(dead_code)]
-    comparative_label: &'static str,
 }
 
 impl JsonPrinter {
-    pub(super) fn new(comparative_label: &'static str) -> Self {
-        Self {
-            completed_count: 0,
-            comparative_label,
-        }
+    pub(super) fn new() -> Self {
+        Self { completed_count: 0 }
     }
 }
 
@@ -284,7 +279,7 @@ Max Execution Time     : 12,345 ms
 
     #[test]
     fn test_json_printer() {
-        let mut printer = JsonPrinter::new("Relative");
+        let mut printer = JsonPrinter::new();
 
         let test_results = gen_test_results();
 

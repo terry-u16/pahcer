@@ -103,12 +103,7 @@ pub(crate) fn run(args: RunArgs) -> Result<()> {
     }
 
     let mut runner = if args.json {
-        multi::MultiCaseRunner::new_json(
-            single_runner,
-            test_cases,
-            settings.test.threads,
-            if args.rank { "Rank" } else { "Relative" },
-        )
+        multi::MultiCaseRunner::new_json(single_runner, test_cases, settings.test.threads)
     } else {
         multi::MultiCaseRunner::new_console(
             single_runner,

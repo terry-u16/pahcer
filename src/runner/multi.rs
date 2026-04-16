@@ -33,9 +33,8 @@ impl MultiCaseRunner {
         single_runner: SingleCaseRunner,
         test_cases: Vec<TestCase>,
         threads: usize,
-        comparative_label: &'static str,
     ) -> Self {
-        let printer = Box::new(printer::JsonPrinter::new(comparative_label));
+        let printer = Box::new(printer::JsonPrinter::new());
         Self::new(single_runner, test_cases, threads, printer)
     }
 
