@@ -15,7 +15,7 @@ struct ResultTableRow {
     time: String,
     ac_total: String,
     avg_score: String,
-    avg_relative: String,
+    avg_comparative: String,
     max_time: String,
     tag: String,
     comment: String,
@@ -149,7 +149,7 @@ fn print_table(
             row.time,
             row.ac_total,
             row.avg_score,
-            row.avg_relative,
+            row.avg_comparative,
             row.max_time,
             row.tag,
             row.comment,
@@ -189,11 +189,11 @@ fn convert_to_table_row(
         avg_score
     };
     let avg_comparative_score = calculate_average_comparative_score(&result, score_calculator);
-    let avg_relative = format!("{avg_comparative_score:.3}");
-    let avg_relative = if avg_comparative_score == best_avg_comparative_score {
-        avg_relative.bold().green().to_string()
+    let avg_comparative = format!("{avg_comparative_score:.3}");
+    let avg_comparative = if avg_comparative_score == best_avg_comparative_score {
+        avg_comparative.bold().green().to_string()
     } else {
-        avg_relative
+        avg_comparative
     };
 
     let max_time = format!("{:.0} ms", result.max_execution_time * 1e3);
@@ -207,7 +207,7 @@ fn convert_to_table_row(
         time: time_str,
         ac_total,
         avg_score,
-        avg_relative,
+        avg_comparative,
         max_time,
         tag: tag_display,
         comment: result.comment,

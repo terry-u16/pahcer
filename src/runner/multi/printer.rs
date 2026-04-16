@@ -18,7 +18,7 @@ pub(super) struct ConsolePrinter {
     completed_count: usize,
     score_width: usize,
     score_sum: u64,
-    relative_score_sum: f64,
+    comparative_score_sum: f64,
     comparative_label: &'static str,
 }
 
@@ -28,9 +28,9 @@ impl Printer for ConsolePrinter {
         assert!(self.completed_count <= self.testcase_count);
 
         let score = result.score().as_ref().map(|s| s.get()).unwrap_or(0);
-        let relative_score = result.relative_score().as_ref().copied().unwrap_or(0.0);
+        let comparative_score = result.relative_score().as_ref().copied().unwrap_or(0.0);
         self.score_sum += score;
-        self.relative_score_sum += relative_score;
+        self.comparative_score_sum += comparative_score;
 
         if self.completed_count == 1 {
             self.print_header(writer)?;
@@ -48,7 +48,7 @@ impl Printer for ConsolePrinter {
             .execution_time()
             .as_millis()
             .to_formatted_string(&Locale::en);
-        let average_relative_score = self.relative_score_sum / self.completed_count as f64;
+        let average_comparative_score = self.comparative_score_sum / self.completed_count as f64;
         self.score_width = self.score_width.max(score.len());
         let score_width = self.score_width;
         let average_score_width = score_width + 3;
@@ -59,9 +59,9 @@ impl Printer for ConsolePrinter {
             self.testcase_count,
             result.test_case().seed(),
             score,
-            relative_score,
+            comparative_score,
             average_score,
-            average_relative_score,
+            average_comparative_score,
             execution_time,
         );
 
@@ -83,7 +83,7 @@ impl Printer for ConsolePrinter {
             nonzero2,
         );
         let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
-        let average_relative_score = stats.relative_score_sum / stats.results.len() as f64;
+        let average_comparative_score = stats.relative_score_sum / stats.results.len() as f64;
         let ac_count =
             stats.results.len() - stats.results.iter().filter(|r| r.score().is_err()).count();
 
@@ -91,7 +91,7 @@ impl Printer for ConsolePrinter {
         writeln!(writer, "Average Score (log10)  : {average_score_log10:.5}")?;
         writeln!(
             writer,
-            "Average {} Score : {average_relative_score:.3}",
+            "Average {} Score : {average_comparative_score:.3}",
             self.comparative_label
         )?;
 
@@ -128,7 +128,7 @@ impl ConsolePrinter {
             completed_count: 0,
             score_width: 7,
             score_sum: 0,
-            relative_score_sum: 0.0,
+            comparative_score_sum: 0.0,
             comparative_label,
         }
     }
