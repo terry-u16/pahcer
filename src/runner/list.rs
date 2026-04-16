@@ -103,8 +103,12 @@ fn calculate_average_comparative_score(
             NonZeroU64::new(case.score).map(|score| score_calculator.calculate(case.seed, score))
         })
         .sum::<f64>();
+    normalize_zero(total_comparative_score / result.case_count as f64)
+}
 
-    total_comparative_score / result.case_count as f64
+fn normalize_zero(value: f64) -> f64 {
+    // 表示時に `-0.000` になるのを避けるため、符号付きゼロを正規化する。
+    if value == 0.0 { 0.0 } else { value }
 }
 
 fn print_table(
