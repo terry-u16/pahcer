@@ -222,7 +222,7 @@ mod test {
     fn test_rank_score_for_new_submission() {
         let results = [AllResultJson {
             start_time: chrono::Local::now(),
-            case_count: 1,
+            case_count: 2,
             total_score: 100,
             total_score_log10: 2.0,
             total_relative_score: 100.0,
@@ -259,7 +259,7 @@ mod test {
     fn test_rank_score_for_saved_submission() {
         let results = [AllResultJson {
             start_time: chrono::Local::now(),
-            case_count: 1,
+            case_count: 3,
             total_score: 100,
             total_score_log10: 2.0,
             total_relative_score: 100.0,
