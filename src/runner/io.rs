@@ -225,7 +225,7 @@ impl AllResultJson {
                 CaseResultJson::new(
                     r.test_case().seed(),
                     score,
-                    *r.relative_score().as_ref().unwrap_or(&0.0),
+                    *r.comparative_score().as_ref().unwrap_or(&0.0),
                     r.execution_time().as_secs_f64(),
                     error_message,
                 )
@@ -247,7 +247,7 @@ impl AllResultJson {
             case_count: stats.results.len(),
             total_score: stats.score_sum,
             total_score_log10: stats.score_sum_log10,
-            total_relative_score: stats.relative_score_sum,
+            total_relative_score: stats.comparative_score_sum,
             max_execution_time,
             comment: comment.to_string(),
             wa_seeds,

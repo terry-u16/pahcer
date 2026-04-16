@@ -28,7 +28,7 @@ impl Printer for ConsolePrinter {
         assert!(self.completed_count <= self.testcase_count);
 
         let score = result.score().as_ref().map(|s| s.get()).unwrap_or(0);
-        let comparative_score = result.relative_score().as_ref().copied().unwrap_or(0.0);
+        let comparative_score = result.comparative_score().as_ref().copied().unwrap_or(0.0);
         self.score_sum += score;
         self.comparative_score_sum += comparative_score;
 
@@ -83,7 +83,7 @@ impl Printer for ConsolePrinter {
             nonzero2,
         );
         let average_score_log10 = stats.score_sum_log10 / stats.results.len() as f64;
-        let average_comparative_score = stats.relative_score_sum / stats.results.len() as f64;
+        let average_comparative_score = stats.comparative_score_sum / stats.results.len() as f64;
         let ac_count =
             stats.results.len() - stats.results.iter().filter(|r| r.score().is_err()).count();
 
@@ -196,7 +196,7 @@ impl Printer for JsonPrinter {
             progress: self.completed_count,
             seed: result.test_case().seed(),
             score: result.score().as_ref().map(|s| s.get()).unwrap_or(0),
-            relative_score: result.relative_score().as_ref().copied().unwrap_or(0.0),
+            relative_score: result.comparative_score().as_ref().copied().unwrap_or(0.0),
             execution_time: result.execution_time().as_secs_f64(),
             error_message: result
                 .score()

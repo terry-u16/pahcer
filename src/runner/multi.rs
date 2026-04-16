@@ -110,7 +110,7 @@ pub(super) struct TestStats {
     pub(super) results: Vec<TestResult>,
     pub(super) score_sum: u64,
     pub(super) score_sum_log10: f64,
-    pub(super) relative_score_sum: f64,
+    pub(super) comparative_score_sum: f64,
     pub(super) start_time: DateTime<Local>,
 }
 
@@ -125,9 +125,9 @@ impl TestStats {
             .filter_map(|r| r.score_log10().ok())
             .sum::<f64>()
             .max(0.0);
-        let relative_score_sum = results
+        let comparative_score_sum = results
             .iter()
-            .filter_map(|r| r.relative_score().as_ref().ok())
+            .filter_map(|r| r.comparative_score().as_ref().ok())
             .sum::<f64>()
             .max(0.0);
 
@@ -135,7 +135,7 @@ impl TestStats {
             results,
             score_sum,
             score_sum_log10,
-            relative_score_sum,
+            comparative_score_sum,
             start_time,
         }
     }
@@ -198,6 +198,6 @@ mod test {
         assert_eq!(stats.results.len(), 4);
         assert_eq!(stats.score_sum, 400);
         assert_eq!(stats.score_sum_log10, 8.0);
-        assert_eq!(stats.relative_score_sum, 450.0);
+        assert_eq!(stats.comparative_score_sum, 450.0);
     }
 }

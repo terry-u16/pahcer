@@ -67,7 +67,7 @@ impl TestCase {
 pub(super) struct TestResult {
     test_case: TestCase,
     score: Result<NonZeroU64, String>,
-    relative_score: Result<f64, String>,
+    comparative_score: Result<f64, String>,
     execution_time: Duration,
 }
 
@@ -75,13 +75,13 @@ impl TestResult {
     pub(super) fn new(
         test_case: TestCase,
         score: Result<NonZeroU64, String>,
-        relative_score: Result<f64, String>,
+        comparative_score: Result<f64, String>,
         execution_time: Duration,
     ) -> Self {
         Self {
             test_case,
             score,
-            relative_score,
+            comparative_score,
             execution_time,
         }
     }
@@ -99,8 +99,8 @@ impl TestResult {
         self.score.as_ref().map(|s| (s.get() as f64).log10())
     }
 
-    pub(super) fn relative_score(&self) -> &Result<f64, String> {
-        &self.relative_score
+    pub(super) fn comparative_score(&self) -> &Result<f64, String> {
+        &self.comparative_score
     }
 
     pub(super) const fn execution_time(&self) -> Duration {
@@ -161,14 +161,14 @@ impl SingleCaseRunner {
                     },
                     None => Err("Score not found".to_string()),
                 };
-                let relative_score = score
+                let comparative_score = score
                     .as_ref()
                     .map(|score| {
                         self.comparative_score_calculator
                             .calculate(test_case.seed, *score)
                     })
                     .map_err(Clone::clone);
-                TestResult::new(test_case, score, relative_score, execution_time)
+                TestResult::new(test_case, score, comparative_score, execution_time)
             }
             Err(e) => TestResult::new(
                 test_case,
@@ -321,30 +321,31 @@ mod test {
     }
 
     #[test]
-    fn test_result_relative_score() {
+    fn test_result_comparative_score() {
         let non_zero_100 = NonZeroU64::new(100).unwrap();
         let non_zero_200 = NonZeroU64::new(200).unwrap();
 
         let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Max);
         assert_eq!(
             TestResult::new(test_case, Ok(non_zero_100), Ok(100.0), Duration::ZERO)
-                .relative_score(),
+                .comparative_score(),
             &Ok(100.0)
         );
         assert_eq!(
             TestResult::new(test_case, Ok(non_zero_200), Ok(200.0), Duration::ZERO)
-                .relative_score(),
+                .comparative_score(),
             &Ok(200.0)
         );
 
         let test_case = TestCase::new(0, Some(NonZeroU64::new(100).unwrap()), Objective::Min);
         assert_eq!(
             TestResult::new(test_case, Ok(non_zero_100), Ok(100.0), Duration::ZERO)
-                .relative_score(),
+                .comparative_score(),
             &Ok(100.0)
         );
         assert_eq!(
-            TestResult::new(test_case, Ok(non_zero_200), Ok(50.0), Duration::ZERO).relative_score(),
+            TestResult::new(test_case, Ok(non_zero_200), Ok(50.0), Duration::ZERO)
+                .comparative_score(),
             &Ok(50.0)
         );
     }
