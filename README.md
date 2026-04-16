@@ -207,6 +207,7 @@ $ pahcer run
 - `./pahcer/summary.md` : 実行結果のサマリが表形式で記録されたファイルです。
 - `./pahcer/best_scores.json` : ローカルでのベストスコアが保存されたJSONファイルです。
 - `./pahcer/json/result_*.json` : 実行結果の詳細が記録されたJSONファイルです。
+  - ver 0.4.0 で `--rank` 機能が追加されましたが、既存ユーザーとの互換性のため、JSON内の `relative_score` / `total_relative_score` というフィールド名は `--rank` 使用時もそのまま維持されます。
 
 デフォルトでは、 seed=0 から seed=99 までの100ケースが実行されます。カスタマイズしたい場合やうまく動かない場合は `./pahcer_config.toml` を編集してください。
 
