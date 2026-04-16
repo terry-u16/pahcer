@@ -32,7 +32,7 @@ pub(super) fn list_past_results(
     let results = io::load_result_jsons(&settings.test.out_dir, limit)?;
     ensure!(
         !results.is_empty(),
-        "No results found. JSON directory does not exist or contains no result files: {}",
+        "No results found. JSON directory may not exist, may contain no result files, or all result files may have failed to load: {}",
         io::get_json_dir_path(&settings.test.out_dir).display()
     );
 
