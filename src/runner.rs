@@ -169,12 +169,12 @@ struct Number {
 pub(crate) fn list(args: ListArgs) -> Result<()> {
     let settings = io::load_setting_file(&args.setting_file)
         .with_context(|| format!("Failed to load the setting file {}.", &args.setting_file))?;
-    let best_score_path = io::get_best_score_path(&settings.test.out_dir);
-    let best_scores = io::load_best_scores(&best_score_path)?;
     let score_calculator = if args.rank {
         let all_results = io::load_result_jsons(&settings.test.out_dir, None)?;
         create_rank_score_calculator(&all_results, settings.problem.objective, true)
     } else {
+        let best_score_path = io::get_best_score_path(&settings.test.out_dir);
+        let best_scores = io::load_best_scores(&best_score_path)?;
         create_relative_score_calculator(best_scores, settings.problem.objective)
     };
 
